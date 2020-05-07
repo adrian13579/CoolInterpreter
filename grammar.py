@@ -1,4 +1,5 @@
 from cmp.pycompiler import Grammar
+from ast import *
 
 G = Grammar()
 # Terminals
@@ -21,35 +22,35 @@ func_call, arg_list = G.NonTerminals('<func-call> <arg-list>')
 let_list, let_single = G.NonTerminals('<let-list> <let-single>')
 case_list, case_single = G.NonTerminals('<case-list> <case-single>')
 
-program %= class_list
+program %= class_list, lambda h, s: ProgramNode(s[1])
 
-class_list %= def_class + semi + class_list
-class_list %= def_class + semi
+class_list %= def_class + semi + class_list, lambda h, s: [s[1]] + s[2]
+class_list %= def_class + semi, lambda h, s: [s[1]]
 
-def_class %= classx + idx + ocur + feature_list + ccur
-def_class %= classx + idx + inherits + idx + ocur + feature_list + ccur
+def_class %= classx + idx + ocur + feature_list + ccur, lambda h, s: ClassDeclarationNode(s[2], s[4])
+def_class %= classx + idx + inherits + idx + ocur + feature_list + ccur, lambda h, s: ClassDeclarationNode(s[2], s[6],
+                                                                                                           s[4])
 
-feature_list %= def_attr + semi + feature_list
-feature_list %= def_func + semi + feature_list
-feature_list %= G.Epsilon
+feature_list %= def_attr + semi + feature_list, lambda h, s: [s[1]] + s[3]
+feature_list %= def_func + semi + feature_list, lambda h, s: [s[1]] + s[3]
+feature_list %= G.Epsilon, lambda h, s: []
 
-def_attr %= idx + colon + idx
-def_attr %= idx + colon + idx + assigment + expr
+def_attr %= idx + colon + idx, lambda h, s: AttrDeclarationNode(s[1], s[3])
+def_attr %= idx + colon + idx + assigment + expr, lambda h, s: AttrDeclarationNode(s[1], s[3], s[5])
 
-def_func %= idx + opar + params_list + cpar + colon + idx + ocur + expr_list + ccur
+def_func %= idx + opar + params_list + cpar + colon + idx + ocur + expr_list + ccur, lambda h, s: MethodDeclarationNode(
+    s[1], s[3], s[6], s[8])
 
-params_list %= param + comma + params_list
-params_list %= G.Epsilon
+params_list %= param + comma + params_list, lambda h, s: [s[1]] + s[3]
+params_list %= param, lambda h, s: [s[1]]
+params_list %= G.Epsilon, lambda h, s: []
 
-param %= idx + colon + idx
+param %= idx + colon + idx, lambda h, s: VarDeclarationNode(s[1], s[2])
 
-expr_list %= expr + semi
+expr_list %= expr + semi,
 expr_list %= expr + semi + expr_list
 
 expr %= idx + assigment + expr
-expr %= expr + at + idx + dot + idx + opar + arg_list + cpar
-expr %= expr + dot + idx + opar + arg_list + cpar
-expr %= expr + opar + arg_list + cpar
 expr %= ifx + expr + thenx + expr + elsex + expr + fi
 expr %= whilex + expr + loop + expr + pool
 expr %= ocur + expr_list + ccur
@@ -59,8 +60,28 @@ expr %= case + expr + of + case_list + esac
 expr %= new + idx
 expr %= isvoid + expr
 expr %= notx + expr
-expr %= opar + expr + cpar
+expr %= cmp
 
+cmp %= cmp + less + arith
+cmp %= cmp + less_equal + arith
+cmp %= arith
+
+arith %= arith + plus + term
+arith %= arith + minus + term
+arith %= term
+
+term %= term + star + factor
+term %= term + div + factor
+term %= factor
+
+factor %= atom
+factor %= opar + expr + cpar
+
+atom %= intx
+atom %= idx
+atom %= factor + at + idx + dot + idx + opar + arg_list + cpar
+atom %= factor + dot + idx + opar + arg_list + cpar
+# atom %= idx + opar + arg_list + cpar
 
 arg_list %= expr
 arg_list %= expr + comma + arg_list
