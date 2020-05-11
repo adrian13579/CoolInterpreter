@@ -91,14 +91,26 @@ class LetNode(ExpressionNode):
 
 
 class CaseNode(ExpressionNode):
-    def __init__(self, case_expr, var_decl_list):
+    def __init__(self, case_expr, options):
         self.case_expr = case_expr
-        self.var_decl_list = var_decl_list
+        self.options = options
+
+
+class CaseOptionNode(ExpressionNode):
+    def __init__(self, idx, typex, expr):
+        self.id = idx
+        self.type = typex
+        self.expr = expr
+
+
+class BlocksNode(ExpressionNode):
+    def __init__(self, expr_list):
+        self.expr_list = expr_list
 
 
 class AtomicNode(ExpressionNode):
-    def __init__(self, expr):
-        self.expr = expr
+    def __init__(self, lex):
+        self.lex = lex
 
 
 class IsVoidNode(AtomicNode):
@@ -120,6 +132,10 @@ class BinaryNode(ExpressionNode):
 
 
 class ConstantNumNode(AtomicNode):
+    pass
+
+
+class StringNode(AtomicNode):
     pass
 
 

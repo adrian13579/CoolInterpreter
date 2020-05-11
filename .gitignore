@@ -1,0 +1,21 @@
+# Created by .ignore support plugin (hsz.mobi)
+.idea/.gitignore
+.idea/CoolInterpreter.iml
+.idea/inspectionProfiles/
+.idea/misc.xml
+.idea/modules.xml
+.idea/vcs.xml
+__pycache__/
+cmp/__pycache__/
+cmp/lexer/__pycache__/
+cmp/parsers/__pycache__/
+cool-manual.pdf
+test/code1.py
+test/qwq.py
+
+cmp/tools/.ipynb_checkpoints/
+cmp/tools/__init__.py
+cmp/tools/automata.py
+cmp/tools/evaluation.py
+cmp/tools/parsing.py
+cmp/tools/regex.py

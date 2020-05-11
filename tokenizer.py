@@ -1,11 +1,11 @@
 from cmp.lexer.lexer import Lexer
-from grammar import G
+from grammar import *
 
-alf = 'a|b|c|d|f|e|g|h|i|j|k|l|m|n|o|p|q|r|s|t|u|v|w|x|y|z|A|B|C|D|E|F|G|H|I|J|K|L|M|N|O|P|Q|R|S|T|U|V|X|Y|Z'
+alf = 'a|b|c|d|f|e|g|h|i|j|k|l|m|n|o|p|q|r|s|t|u|v|w|x|y|z|A|B|C|D|E|F|G|H|I|J|K|L|M|N|O|P|Q|R|S|T|U|V|W|X|Y|Z'
 num = '1|2|3|4|5|6|7|8|9|0'
-intx = '[[1|2|3|4|5|6|7|8|9][0|1|2|3|4|5|6|7|8|9]@]|[0]'
-string = f'"[{alf}| |_|{num}|\n|\b|\t|\f]@"'
-idx = f'[[[{alf}|_]@][{alf}|_|{num}]@]|[{alf}|_]@'
+integer = '[[1|2|3|4|5|6|7|8|9][0|1|2|3|4|5|6|7|8|9]@]|[0]'
+stringx = f'"[{alf}|.|;|:|(|)| |_|{num}|\n|\b|\t|\f]@"'
+identifier = f'[[[{alf}|_]@][{alf}|_|{num}]@]|[{alf}|_]@'
 comment_dashes = f'--[{alf}|_| |{num}]@\n'
 comment_star = f'*[{alf}|_| |\n|{num}]@*'
 
@@ -13,49 +13,49 @@ comment_star = f'*[{alf}|_| |\n|{num}]@*'
 class CoolTokenizer:
     def __init__(self):
         self.lexer = Lexer([
-            ('class', 'class'),
-            ('inherits', 'inherits'),
-            ('self', 'self'),
-            ('let', 'let'),
-            ('assigment', '<-'),
-            ('if', 'if'),
-            ('then', 'then'),
-            ('else', 'else'),
-            ('fi', 'fi'),
-            ('while', 'while'),
-            ('loop', 'loop'),
-            ('pool', 'pool'),
-            ('case', 'case'),
-            ('of', 'of'),
-            ('esac', 'esac'),
-            ('case_assigment', '=>'),
-            ('new', 'new'),
-            ('isvoid', 'isvoid'),
-            ('equal', '='),
-            ('less', '<'),
-            ('less_equal', '<='),
-            ('plus', '+'),
-            ('minus', '-'),
-            ('star', '*'),
-            ('div', '/'),
-            ('semi', ';'),
-            ('colon', ':'),
-            ('comma', ','),
-            ('dot', '.'),
-            ('opar', '('),
-            ('cpar', ')'),
-            ('ocur', '{'),
-            ('ccur', '}'),
-            ('in', 'in'),
-            ('not', 'not'),
-            ('id', idx),
-            ('int', intx),
-            ('string', string),
-            ('true', 'true'),
-            ('false', 'false'),
-            # f'[{intx}|{string}|{idx}]'),
+            (classx, 'class'),
+            (inherits, 'inherits'),
+       #     (selfx, 'self'),
+            (let, 'let'),
+            (assigment, '<-'),
+            (ifx, 'if'),
+            (thenx, 'then'),
+            (elsex, 'else'),
+            (fi, 'fi'),
+            (whilex, 'while'),
+            (loop, 'loop'),
+            (pool, 'pool'),
+            (case, 'case'),
+            (of, 'of'),
+            (esac, 'esac'),
+            (case_assigment, '=>'),
+            (new, 'new'),
+            (isvoid, 'isvoid'),
+            (equal, '='),
+            (less, '<'),
+            (less_equal, '<='),
+            (plus, '+'),
+            (minus, '-'),
+            (star, '*'),
+            (div, '/'),
+            (semi, ';'),
+            (colon, ':'),
+            (comma, ','),
+            (dot, '.'),
+            (opar, '('),
+            (cpar, ')'),
+            (ocur, '{'),
+            (ccur, '}'),
+            (inx, 'in'),
+            (notx, 'not'),
+            (idx, identifier),
+            (intx, integer),
+            (string, stringx),
+            (true, 'true'),
+            (false, 'false'),
             ('new_line', '\n'),
             ('space', '[ ]@'),
+            ('tab', '\t'),
             ('comment', f'{comment_dashes}|{comment_star}')
         ], G.EOF)
 
@@ -69,6 +69,8 @@ class CoolTokenizer:
             elif token.token_type == 'new_line':
                 row += 1
                 col = 1
+            elif token.token_type == 'tab':
+                col += 4
             elif token.token_type == 'comment':
                 new_lines = token.lex.count('\n')
                 row += new_lines

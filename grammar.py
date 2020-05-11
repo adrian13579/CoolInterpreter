@@ -22,9 +22,10 @@ func_call, arg_list = G.NonTerminals('<func-call> <arg-list>')
 let_list, let_single = G.NonTerminals('<let-list> <let-single>')
 case_list, case_single = G.NonTerminals('<case-list> <case-single>')
 
+# Productions
 program %= class_list, lambda h, s: ProgramNode(s[1])
 
-class_list %= def_class + semi + class_list, lambda h, s: [s[1]] + s[2]
+class_list %= def_class + semi + class_list, lambda h, s: [s[1]] + s[3]
 class_list %= def_class + semi, lambda h, s: [s[1]]
 
 def_class %= classx + idx + ocur + feature_list + ccur, lambda h, s: ClassDeclarationNode(s[2], s[4])
@@ -38,7 +39,7 @@ feature_list %= G.Epsilon, lambda h, s: []
 def_attr %= idx + colon + idx, lambda h, s: AttrDeclarationNode(s[1], s[3])
 def_attr %= idx + colon + idx + assigment + expr, lambda h, s: AttrDeclarationNode(s[1], s[3], s[5])
 
-def_func %= idx + opar + params_list + cpar + colon + idx + ocur + expr_list + ccur, lambda h, s: MethodDeclarationNode(
+def_func %= idx + opar + params_list + cpar + colon + idx + ocur + expr + ccur, lambda h, s: MethodDeclarationNode(
     s[1], s[3], s[6], s[8])
 
 params_list %= param + comma + params_list, lambda h, s: [s[1]] + s[3]
@@ -47,52 +48,53 @@ params_list %= G.Epsilon, lambda h, s: []
 
 param %= idx + colon + idx, lambda h, s: VarDeclarationNode(s[1], s[2])
 
-expr_list %= expr + semi,
-expr_list %= expr + semi + expr_list
+expr_list %= expr + semi, lambda h, s: [s[1]]
+expr_list %= expr + semi + expr_list, lambda h, s: [s[1]] + s[3]
 
-expr %= idx + assigment + expr
-expr %= ifx + expr + thenx + expr + elsex + expr + fi
-expr %= whilex + expr + loop + expr + pool
-expr %= ocur + expr_list + ccur
-expr %= let_list + inx + expr
-expr %= ocur + expr_list + ccur
-expr %= case + expr + of + case_list + esac
-expr %= new + idx
-expr %= isvoid + expr
-expr %= notx + expr
-expr %= cmp
+expr %= idx + assigment + expr, lambda h, s: AssignNode(s[1], s[3])
+expr %= ifx + expr + thenx + expr + elsex + expr + fi, lambda h, s: ConditonalNode(s[2], s[4], s[6])
+expr %= whilex + expr + loop + expr + pool, lambda h, s: LoopNode(s[2], s[4])
+expr %= ocur + expr_list + ccur, lambda h, s: BlocksNode(s[2])
+expr %= let + let_list + inx + expr, lambda h, s: LetNode(s[2], s[4])
+expr %= case + expr + of + case_list + esac, lambda h, s: CaseNode(s[2], s[4])
+expr %= new + idx, lambda h, s: InstantiateNode(s[2])
+expr %= isvoid + expr, lambda h, s: IsVoidNode(s[2])
+expr %= notx + expr, lambda h, s: NotNode(s[2])
+expr %= cmp, lambda h, s: s[1]
 
-cmp %= cmp + less + arith
-cmp %= cmp + less_equal + arith
-cmp %= arith
+cmp %= cmp + less + arith, lambda h, s: LessNode(s[1], s[3])
+cmp %= cmp + less_equal + arith, lambda h, s: LessOrEqualNode(s[1], s[3])
+cmp %= arith, lambda h, s: s[1]
 
-arith %= arith + plus + term
-arith %= arith + minus + term
-arith %= term
+arith %= arith + plus + term, lambda h, s: PlusNode(s[1], s[3])
+arith %= arith + minus + term, lambda h, s: MinusNode(s[1], s[3])
+arith %= term, lambda h, s: s[1]
 
-term %= term + star + factor
-term %= term + div + factor
-term %= factor
+term %= term + star + factor, lambda h, s: StarNode(s[1], s[3])
+term %= term + div + factor, lambda h, s: DivNode(s[1], s[3])
+term %= factor, lambda h, s: s[1]
 
-factor %= atom
-factor %= opar + expr + cpar
+factor %= atom, lambda h, s: s[1]
+factor %= opar + expr + cpar, lambda h, s: s[2]
 
-atom %= intx
-atom %= idx
-atom %= factor + at + idx + dot + idx + opar + arg_list + cpar
-atom %= factor + dot + idx + opar + arg_list + cpar
-# atom %= idx + opar + arg_list + cpar
+atom %= intx, lambda h, s: ConstantNumNode(s[1])
+atom %= idx, lambda h, s: VariableNode(s[1])
+atom %= factor + at + idx + dot + idx + opar + arg_list + cpar, lambda h, s: MethodCallTypeNode(s[1], s[3], s[5], s[7])
+atom %= factor + dot + idx + opar + arg_list + cpar, lambda h, s: MethodCallNoTypeNode(s[1], s[3], s[5])
+atom %= idx + opar + arg_list + cpar, lambda h, s: MethodCallNode(s[1], s[3])
+atom %= string, lambda h, s: StringNode(s[1])
 
-arg_list %= expr
-arg_list %= expr + comma + arg_list
-arg_list %= G.Epsilon
+arg_list %= expr, lambda h, s: [s[1]]
+arg_list %= expr + comma + arg_list, lambda h, s: [s[1]] + s[3]
+arg_list %= G.Epsilon, lambda h, s: []
 
-let_list %= let_single + let_list
-let_list %= let_single
+let_list %= let_single + comma + let_list, lambda h, s: [s[1]] + s[3]
+let_list %= let_single, lambda h, s: [s[1]]
 
-let_single %= let + idx + colon + idx
+let_single %= idx + colon + idx, lambda h, s: VarDeclarationNode(s[1], s[3])
+let_single %= idx + colon + idx + assigment + expr, lambda h, s: VarDeclarationNode(s[1], s[3], s[5])
 
-case_list %= case_single + case_list
-case_list %= case_single
+case_list %= case_single + case_list, lambda h, s: [s[1]] + s[2]
+case_list %= case_single, lambda h, s: [s[1]]
 
-case_single %= idx + colon + idx + case_assigment + expr + semi
+case_single %= idx + colon + idx + case_assigment + expr + semi, lambda h, s: CaseOptionNode(s[1], s[3], s[5])

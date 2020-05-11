@@ -110,16 +110,16 @@ class LR1Parser(ShiftReduceParser):
             idx = node.idx
             for item in node.state:
                 if item.IsReduceItem and item.production.Left == G.startSymbol:
-                    self._register(self.action, (idx, G.EOF), (self.OK, 0))
+                    self._register(self.action, (idx, G.EOF.Name), (self.OK, 0))
                 elif item.IsReduceItem:
                     for symbol in item.lookaheads:
-                        self._register(self.action, (idx, symbol), (self.REDUCE, item.production))
+                        self._register(self.action, (idx, symbol.Name), (self.REDUCE, item.production))
                 elif item.NextSymbol.IsTerminal:
                     next_idx = node.transitions[item.NextSymbol.Name][0].idx
-                    self._register(self.action, (idx, item.NextSymbol), (self.SHIFT, next_idx))
+                    self._register(self.action, (idx, item.NextSymbol.Name), (self.SHIFT, next_idx))
                 elif item.NextSymbol.IsNonTerminal:
                     next_idx = node.transitions[item.NextSymbol.Name][0].idx
-                    self._register(self.goto, (idx, item.NextSymbol), next_idx)
+                    self._register(self.goto, (idx, item.NextSymbol.Name), next_idx)
 
     @staticmethod
     def _register(table, key, value):

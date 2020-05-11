@@ -13,34 +13,30 @@ class ShiftReduceParser:
     def _build_parsing_table(self):
         raise NotImplementedError()
 
-    def __call__(self, w):
+    def __call__(self, w, get_shift_reduce=False):
         stack = [0]
         cursor = 0
         output = []
+        operations = []
 
         while True:
             state = stack[-1]
             lookahead = w[cursor]
             if self.verbose: print(stack, w[cursor:])
-
-            # Your code here!!! (Detect error)
             try:
-                action, tag = self.action[state, lookahead][0]
-                # Your code here!!! (Shift case)
+                action, tag = self.action[state, lookahead.token_type.Name][0]
                 if action == ShiftReduceParser.SHIFT:
+                    operations.append(self.SHIFT)
                     stack.append(tag)
                     cursor += 1
-                # Your code here!!! (Reduce case)
                 elif action == ShiftReduceParser.REDUCE:
+                    operations.append(self.REDUCE)
                     for _ in range(len(tag.Right)): stack.pop()
-                    stack.append(self.goto[stack[-1], tag.Left][0])
+                    stack.append(self.goto[stack[-1], tag.Left.Name][0])
                     output.append(tag)
-                # Your code here!!! (OK case)
                 elif action == ShiftReduceParser.OK:
-                    return output
-                # Your code here!!! (Invalid case)
+                    return output if not get_shift_reduce else (output, operations)
                 else:
                     assert False, 'Must be something wrong!'
             except KeyError:
-                raise Exception('Aborting parsing, item is not viable.')
-
+                raise Exception(f'Aborting parsing: syntax error near token {lookahead.lex} line:{lookahead.row} col:{lookahead.col}')
