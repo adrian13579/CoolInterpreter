@@ -9,7 +9,8 @@ class Lexer:
         self.regexs = self._build_regexs(table)
         self.automaton = self._build_automaton()
 
-    def _build_regexs(self, table):
+    @staticmethod
+    def _build_regexs(table):
         regexs = []
         for n, (token_type, regex) in enumerate(table):
             NFA = Regex.build_automaton(regex)
@@ -49,7 +50,7 @@ class Lexer:
         states = None
         lex = None
 
-        while len(text)>0:
+        while len(text) > 0:
             states, lex = self._walk(text)
             if None in (states, text):
                 raise Exception('Parsing Error')
@@ -65,5 +66,3 @@ class Lexer:
 
     def __call__(self, text):
         return [Token(lex, ttype) for lex, ttype in self._tokenize(text)]
-
-

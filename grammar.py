@@ -57,7 +57,6 @@ expr %= whilex + expr + loop + expr + pool, lambda h, s: LoopNode(s[2], s[4])
 expr %= ocur + expr_list + ccur, lambda h, s: BlocksNode(s[2])
 expr %= let + let_list + inx + expr, lambda h, s: LetNode(s[2], s[4])
 expr %= case + expr + of + case_list + esac, lambda h, s: CaseNode(s[2], s[4])
-expr %= new + idx, lambda h, s: InstantiateNode(s[2])
 expr %= isvoid + expr, lambda h, s: IsVoidNode(s[2])
 expr %= notx + expr, lambda h, s: NotNode(s[2])
 expr %= cmp, lambda h, s: s[1]
@@ -76,6 +75,7 @@ term %= factor, lambda h, s: s[1]
 
 factor %= atom, lambda h, s: s[1]
 factor %= opar + expr + cpar, lambda h, s: s[2]
+factor %= new + idx, lambda h, s: InstantiateNode(s[2])
 
 atom %= intx, lambda h, s: ConstantNumNode(s[1])
 atom %= idx, lambda h, s: VariableNode(s[1])

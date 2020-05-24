@@ -1,13 +1,14 @@
 from cmp.lexer.lexer import Lexer
 from grammar import *
 
-alf = 'a|b|c|d|f|e|g|h|i|j|k|l|m|n|o|p|q|r|s|t|u|v|w|x|y|z|A|B|C|D|E|F|G|H|I|J|K|L|M|N|O|P|Q|R|S|T|U|V|W|X|Y|Z'
-num = '1|2|3|4|5|6|7|8|9|0'
-integer = '[[1|2|3|4|5|6|7|8|9][0|1|2|3|4|5|6|7|8|9]@]|[0]'
-stringx = f'"[{alf}|.|;|:|(|)| |_|{num}|\n|\b|\t|\f]@"'
-identifier = f'[[[{alf}|_]@][{alf}|_|{num}]@]|[{alf}|_]@'
-comment_dashes = f'--[{alf}|_| |{num}]@\n'
-comment_star = f'*[{alf}|_| |\n|{num}]@*'
+'« » ∀ §'
+alf = 'a§b§c§d§f§e§g§h§i§j§k§l§m§n§o§p§q§r§s§t§u§v§w§x§y§z§A§B§C§D§E§F§G§H§I§J§K§L§M§N§O§P§Q§R§S§T§U§V§W§X§Y§Z'
+num = '1§2§3§4§5§6§7§8§9§0'
+integer = '««1§2§3§4§5§6§7§8§9»«0§1§2§3§4§5§6§7§8§9»∀»§«0»'
+stringx = f'"«{alf}§.§;§:§(§)§ §_§{num}§\n§\b§\t§\f»∀"'
+identifier = f'«_»∀«{alf}»«{alf}§_§{num}»∀'
+comment_dashes = f'--«{alf}§_§ §{num}»∀\n'
+comment_star = f'*«{alf}§_§ §\n§{num}»∀*'
 
 
 class CoolTokenizer:
@@ -15,7 +16,7 @@ class CoolTokenizer:
         self.lexer = Lexer([
             (classx, 'class'),
             (inherits, 'inherits'),
-       #     (selfx, 'self'),
+            #     (selfx, 'self'),
             (let, 'let'),
             (assigment, '<-'),
             (ifx, 'if'),
@@ -48,13 +49,14 @@ class CoolTokenizer:
             (ccur, '}'),
             (inx, 'in'),
             (notx, 'not'),
+            (at, '@'),
             (idx, identifier),
             (intx, integer),
             (string, stringx),
             (true, 'true'),
             (false, 'false'),
             ('new_line', '\n'),
-            ('space', '[ ]@'),
+            ('space', '« »∀'),
             ('tab', '\t'),
             ('comment', f'{comment_dashes}|{comment_star}')
         ], G.EOF)

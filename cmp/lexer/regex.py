@@ -1,5 +1,5 @@
 from cmp.automata import NFA, DFA, nfa_to_dfa
-from cmp.automata import automata_union, automata_concatenation, automata_minimization,automata_closure
+from cmp.automata import automata_union, automata_concatenation, automata_minimization, automata_closure
 from cmp.evaluation import evaluate_parse
 from cmp.pycompiler import Grammar, EOF
 from cmp.utils import Token
@@ -77,7 +77,7 @@ class ConcatNode(BinaryNode):
 G = Grammar()
 E = G.NonTerminal('E', True)
 T, F, A, X, Y, Z = G.NonTerminals('T F A X Y Z')
-pipe, star, opar, cpar, symbol, epsilon = G.Terminals('| @ [ ] symbol ε')
+pipe, star, opar, cpar, symbol, epsilon = G.Terminals('§ ∀ « » symbol ε')
 
 E %= T + X, lambda h, s: s[2], None, lambda h, s: s[1]
 X %= pipe + T + X, lambda h, s: s[3], None, None, lambda h, s: UnionNode(h[0], s[2])
@@ -96,10 +96,10 @@ A %= epsilon, lambda h, s: EpsilonNode(s[1])
 def regex_tokenizer(text, G, skip_whitespaces=True):
     tokens = []
     fixed_tokens = {
-        '|': Token('|', pipe),
-        '@': Token('@', star),
-        '[': Token('[', opar),
-        ']': Token(']', cpar),
+        '§': Token('§', pipe),
+        '∀': Token('∀', star),
+        '«': Token('«', opar),
+        '»': Token('»', cpar),
         'ε': Token('ε', epsilon)
     }
     for char in text:
@@ -128,7 +128,7 @@ class Regex:
     def build_automaton(regex: str) -> DFA:
         first = compute_firsts(G)
         follows = compute_follows(G, first)
-        tokens = regex_tokenizer(regex, G,skip_whitespaces=False)
+        tokens = regex_tokenizer(regex, G, skip_whitespaces=False)
         parsing_table, _ = build_parsing_table(G, first, follows)
         parser = metodo_predictivo_no_recursivo(G, parsing_table)
         left_parse = parser(tokens)

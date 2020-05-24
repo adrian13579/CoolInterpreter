@@ -1,5 +1,5 @@
-from cmp.parsers.lr1_parser import LR1Parser
-# from cmp.tools.parsing import LR1Parser
+# from cmp.parsers.lr1_parser import LR1Parser
+from cmp.tools.parsing import LR1Parser
 from tokenizer import CoolTokenizer, G
 import dill
 
