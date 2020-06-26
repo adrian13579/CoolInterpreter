@@ -41,7 +41,7 @@ class VarDeclarationNode(ExpressionNode):
     def __init__(self, idx, typex, expression=None):
         self.id = idx
         self.typex = typex
-        self.expression = expression
+        self.expr = expression
 
 
 class AssignNode(ExpressionNode):
@@ -131,6 +131,14 @@ class BinaryNode(ExpressionNode):
         self.right = right
 
 
+class ComparerNode(BinaryNode):
+    pass
+
+
+class ArithmeticNode(BinaryNode):
+    pass
+
+
 class ConstantNumNode(AtomicNode):
     pass
 
@@ -147,31 +155,31 @@ class InstantiateNode(AtomicNode):
     pass
 
 
-class PlusNode(BinaryNode):
+class PlusNode(ArithmeticNode):
     pass
 
 
-class MinusNode(BinaryNode):
+class MinusNode(ArithmeticNode):
     pass
 
 
-class StarNode(BinaryNode):
+class StarNode(ArithmeticNode):
     pass
 
 
-class DivNode(BinaryNode):
+class DivNode(ArithmeticNode):
     pass
 
 
-class LessNode(BinaryNode):
+class LessNode(ComparerNode):
     pass
 
 
-class LessOrEqualNode(BinaryNode):
+class LessOrEqualNode(ComparerNode):
     pass
 
 
-class EqualsNode(BinaryNode):
+class EqualsNode(ComparerNode):
     pass
 
 # TODO:  ~ node

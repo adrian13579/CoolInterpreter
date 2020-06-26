@@ -102,7 +102,8 @@ class Type:
         return plain.values() if clean else plain
 
     def conforms_to(self, other):
-        return other.bypass() or self == other or self.parent is not None and self.parent.conforms_to(other)
+        return other.bypass() or self == other or self.parent is not None and self.parent.conforms_to(
+            other) or isinstance(other, ObjectType)
 
     def bypass(self):
         return False
@@ -122,6 +123,16 @@ class Type:
 
     def __repr__(self):
         return str(self)
+
+
+class ObjectType(Type):
+    def __init__(self):
+        Type.__init__(self, 'Object')
+
+
+class BoolType(Type):
+    def __init__(self):
+        Type.__init__(self, 'Bool')
 
 
 class ErrorType(Type):
@@ -154,10 +165,21 @@ class VoidType(Type):
 
 class IntType(Type):
     def __init__(self):
-        Type.__init__(self, 'int')
+        Type.__init__(self, 'Int')
 
     def __eq__(self, other):
         return other.name == self.name or isinstance(other, IntType)
+
+
+class StringType(Type):
+    def __init__(self):
+        Type.__init__(self, 'String')
+
+    def conforms_to(self, other):
+        raise Exception('Invalid type: String type.')
+
+    def __eq__(self, other):
+        return other.name == self.name or isinstance(other, StringType)
 
 
 class Context:

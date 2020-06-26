@@ -1,86 +1,89 @@
 from cmp.evaluation import evaluate_reverse_parse
+from cmp.semantic import Context
 from tools.utils import TokenizerHandler, ParserHandler
+from visitors import types_builder
+from visitors.types_builder import TypeBuilder
+from visitors.types_collector import TypeCollector
+import os
 
-# code = ('\n'
-#         '\n'
-#         'class Foo inherits Bazz {\n'
-#         '     a : Razz <- case self of\n'
-#         '		      n : Razz => (new Bar);\n'
-#         '		      n : Foo => (new Razz);\n'
-#         '		      n : Bar => n;\n'
-#         '   	         esac;\n'
-#         '\n'
-#         '     b : Int <- a.doh() + g.doh() + doh() + printh();\n'
-#         '\n'
-#         '     doh() : Int { (let i : Int <- h in { h <- h + 2; i; } ) };\n'
-#         '\n'
-#         '};\n'
-#         '\n'
-#         'class Bar inherits Razz {\n'
-#         '\n'
-#         '     c : Int <- doh();\n'
-#         '\n'
-#         '     d : Object <- printh();\n'
-#         '};\n'
-#         '\n'
-#         '\n'
-#         'class Razz inherits Foo {\n'
-#         '\n'
-#         '     e : Bar <- case self of\n'
-#         '		  n : Razz => (new Bar);\n'
-#         '		  n : Bar => n;\n'
-#         '		esac;\n'
-#         '\n'
-#         '     f : Int <- aBazz.doh() + g.doh() + e.doh() + doh() + printh();\n'
-#         '\n'
-#         '};\n'
-#         '\n'
-#         'class Bazz inherits IO {\n'
-#         '\n'
-#         '     h : Int <- 1;\n'
-#         '\n'
-#         '     g : Foo  <- case self of\n'
-#         '		     	n : Bazz => (new Foo);\n'
-#         '		     	n : Razz => (new Bar);\n'
-#         '			n : Foo  => (new Razz);\n'
-#         '			n : Bar => n;\n'
-#         '		  esac;\n'
-#         '\n'
-#         '     i : Object <- printh();\n'
-#         '\n'
-#         '     printh() : Int { { out_int(h); 0; } };\n'
-#         '\n'
-#         '     doh() : Int { (let i: Int <- h in { h <- h + 1; i; } ) };\n'
-#         '};\n'
-#         '\n'
-#         'class Main {\n'
-#         '  a : Bazz <- new Bazz;\n'
-#         '  b : Foo <- new Foo;\n'
-#         '  c : Razz <- new Razz;\n'
-#         '  d : Bar <- new Bar;\n'
-#         '\n'
-#         '  main(): String { "do nothing" };\n'
-#         '\n'
-#         '};\n'
-#         '\n')
 code = '''
+class Foo inherits Bazz {
+     a : Razz <- case self of
+		      n : Razz => (new Bar);
+		      n : Foo => (new Razz);
+		      n : Bar => n;
+   	         esac;
 
-class A {
+     b : Int <- a.doh() + g.doh() + doh() + printh();
 
-        main(): void {
-                let x : T in x + let y : T in y 
+     doh() : Int { (let i : Int <- h in { h <- h + 2; i; } ) };
 
-        };
+};
+
+class Bar inherits Razz {
+
+     c : Int <- doh();
+
+     d : Object <- printh();
+};
+
+
+class Razz inherits Foo {
+
+     e : Bar <- case self of
+		  n : Razz => (new Bar);
+		  n : Bar => n;
+		esac;
+
+     f : Int <- a@Bazz.doh() + g.doh() + e.doh() + doh() + printh();
+
+};
+
+class Bazz inherits IO {
+
+     h : Int <- 1;
+
+     g : Foo  <- case self of
+		     	n : Bazz => (new Foo);
+		     	n : Razz => (new Bar);
+			n : Foo  => (new Razz);
+			n : Bar => n;
+		  esac;
+
+     i : Object <- printh();
+
+     printh() : Int { { out_int(h); 0; } };
+
+     doh() : Int { (let i: Int <- h in { h <- h + 1; i; } ) };
+};
+
+class Main   {
+  a : Bazz <- new Bazz;
+  b : Foo <- new Foo;
+  c : Razz <- new Razz;
+  d : Bar <- new Bar;
+
+  main(): String { "do nothing" };
+
 };
 '''
 
-tokenizer = TokenizerHandler.load()
+path = "/mnt/69F79531507E7A36/CS/This year's stuff/Compilacion/Proyectos/CoolInterpreter/tools"
+tokenizer = TokenizerHandler.load(path + '/lexer')
 tokens = list(tokenizer(code))
 print(tokens)
-parser = ParserHandler.load()
+parser = ParserHandler.load(path + '/parser')
 
 parse, operations = parser(tokens, get_shift_reduce=True)
 for i in parse:
     print(i)
 ast = evaluate_reverse_parse(parse, operations, tokens)
-print(ast)
+
+errors = []
+type_collector = TypeCollector(errors)
+type_collector.visit(ast)
+types_builder = TypeBuilder(type_collector.context,errors)
+types_builder.visit(ast)
+print(type_collector.context)
+print(types_builder.context)
+print(errors)
