@@ -1,10 +1,7 @@
 from cmp.evaluation import evaluate_reverse_parse
-from cmp.semantic import Context
-from tools.utils import TokenizerHandler, ParserHandler
-from visitors import types_builder
-from visitors.types_builder import TypeBuilder
-from visitors.types_collector import TypeCollector
-import os
+from serializers import TokenizerHandler, ParserHandler
+from semantics.types_builder import TypeBuilder
+from semantics.types_collector import TypeCollector
 
 code = '''
 class Foo inherits Bazz {
@@ -58,7 +55,7 @@ class Bazz inherits IO {
 };
 
 class Main   {
-  a : Bazz <- new Bazz;
+ a : Bazz <- new Bazz;
   b : Foo <- new Foo;
   c : Razz <- new Razz;
   d : Bar <- new Bar;
@@ -82,8 +79,11 @@ ast = evaluate_reverse_parse(parse, operations, tokens)
 errors = []
 type_collector = TypeCollector(errors)
 type_collector.visit(ast)
-types_builder = TypeBuilder(type_collector.context,errors)
+types_builder = TypeBuilder(type_collector.context, errors)
 types_builder.visit(ast)
+
+# types_checker = TypeChecker(types_builder.context, types_builder.errors)
+# types_checker.visit(ast)
 print(type_collector.context)
 print(types_builder.context)
 print(errors)

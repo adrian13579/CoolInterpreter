@@ -1,13 +1,13 @@
+from typing import List
+
 from ast import ProgramNode, ClassDeclarationNode
 from cmp import visitor
-from cmp.semantic import Context, IntType, VoidType, ErrorType, SemanticError, Type, ObjectType, StringType, BoolType
+from semantics.types import Context, ErrorType, Type
 
 
 class TypeCollector(object):
-    def __init__(self, errors=None):
-        if errors is None:
-            errors = []
-        self.context = None
+    def __init__(self, context: Context, errors: List[str]):
+        self.context = context
         self.errors = errors
 
     @visitor.on('node')
@@ -16,16 +16,15 @@ class TypeCollector(object):
 
     @visitor.when(ProgramNode)
     def visit(self, node: ProgramNode):
-        self.context = Context()
         self.context.types['<error>'] = ErrorType()
-        self.context.types['Void'] = VoidType()
+        self.context.types['Void'] = Type('Void')
         self_type = self.context.types['SELF_TYPE'] = Type('SELF_TYPE')
         self.context.types['AUTO_TYPE'] = Type('AUTO_TYPE')
 
-        objectx = self.context.types['Object'] = ObjectType()
-        intx = self.context.types['Int'] = IntType()
-        string = self.context.types['String'] = StringType()
-        boolx = self.context.types['Bool'] = BoolType()
+        objectx = self.context.types['Object'] = Type('Object')
+        intx = self.context.types['Int'] = Type('Int')
+        string = self.context.types['String'] = Type('String')
+        boolx = self.context.types['Bool'] = Type('Bool')
         IO = self.context.types['IO'] = Type('IO')
 
         objectx.define_method(name='abort', param_names=[], param_types=[], return_type=objectx)

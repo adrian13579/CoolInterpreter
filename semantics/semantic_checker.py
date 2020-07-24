@@ -1,8 +1,7 @@
-from typing import List
 from ast import *
 from cmp import visitor
-from cmp.semantic import Context, Scope, Type, Method, ErrorType, SemanticError
-from tools.utils import INCOMPATIBLE_TYPES, WRONG_SIGNATURE, LOCAL_ALREADY_DEFINED, VARIABLE_NOT_DEFINED, least_type, \
+from semantics.types import Context, Scope, Type, Method, ErrorType, SemanticError, Attribute, VariableInfo
+from semantics import INCOMPATIBLE_TYPES, WRONG_SIGNATURE, LOCAL_ALREADY_DEFINED, VARIABLE_NOT_DEFINED, \
     INVALID_OPERATION
 
 
@@ -29,7 +28,7 @@ class TypeChecker:
 
     @visitor.when(ClassDeclarationNode)
     def visit(self, node: ClassDeclarationNode, scope: Scope):
-        self.current_type = self.context.get_type(node.id)
+        self.current_type: Type = self.context.get_type(node.id)
 
         for feature in node.features:
             self.visit(feature, scope)
@@ -39,8 +38,8 @@ class TypeChecker:
         att_type: Type = self.context.get_type(node.typex)
         if node.expression is not None:
             expr_type: Type = self.visit(node.expression, scope)
-            if not att_type.conforms_to(expr_type):
-                self.errors.append(INCOMPATIBLE_TYPES % (att_type.name, expr_type.name))
+            if not expr_type.conforms_to(att_type):
+                self.errors.append(INCOMPATIBLE_TYPES % (expr_type.name, att_type.name))
 
     @visitor.when(MethodDeclarationNode)
     def visit(self, node: MethodDeclarationNode, scope: Scope):
@@ -63,9 +62,9 @@ class TypeChecker:
             child_scope.define_variable(param.id, typex)
 
         expr_type: Type = self.context.get_type('Void')
-        for expr in node.body:
-            expr_type = self.visit(expr, child_scope)
-        if self.current_method.return_type != self.context.get_type('void') \
+        if node.body is not None:
+            expr_type = self.visit(node.body, child_scope)
+        if self.current_method.return_type != self.context.get_type('Void') \
                 and not expr_type.conforms_to(self.current_method.return_type):
             self.errors.append(INCOMPATIBLE_TYPES % (expr_type.name, self.current_method.return_type.name))
 
@@ -95,7 +94,7 @@ class TypeChecker:
             except:
                 self.errors.append(VARIABLE_NOT_DEFINED % (node.id, self.current_method.name))
                 var_type = ErrorType()
-        if not var_type.conforms_to(expr_type):
+        if not expr_type.conforms_to(var_type):
             self.errors.append(INCOMPATIBLE_TYPES % (expr_type.name, var_type.name))
 
     @visitor.when(MethodCallNode)
@@ -118,52 +117,6 @@ class TypeChecker:
             self.errors.append(f'Method {node.id} not defined in class {self.current_type.name}')
         return return_type
 
-    @visitor.when(MethodCallTypeNode)
-    def visit(self, node: MethodCallTypeNode, scope: Scope):
-        object_type: Type = self.visit(node.object_expr, scope.create_child())
-        typex: Type = self.context.get_type(node.typex)
-        if not object_type.conforms_to(typex):
-            self.errors.append(INCOMPATIBLE_TYPES % (object_type.name, typex.name))
-
-        try:
-            method: Method = typex.get_method(node.id)
-            return_type: Type = method.return_type
-            if len(method.param_types) != len(node.args):
-                self.errors.append(f'Unexpected number of arguments in method {typex.name}.{node.id}')
-
-            arg_types: List[Type] = []
-            for arg in node.args:
-                arg_types.append(self.visit(arg, scope.create_child()))
-            for arg_type, param_type in zip(arg_types, method.param_types):
-                if not arg_type.conforms_to(param_type):
-                    self.errors.append(f'Incorrect argument type in method {typex.name}.{node.id}:'
-                                       + INCOMPATIBLE_TYPES % (arg_type.name, param_type.name))
-        except SemanticError as error:
-            self.errors.append(str(error))
-            return_type = ErrorType()
-        return return_type
-
-    @visitor.when(MethodCallNoTypeNode)
-    def visit(self, node: MethodCallNoTypeNode, scope: Scope):
-        object_type: Type = self.visit(node.object_expr, scope.create_child())
-        try:
-            method: Method = object_type.get_method(node.idx)
-            return_type: Type = method.return_type
-            if len(method.param_types) != len(node.args):
-                self.errors.append(f'Unexpected number of arguments in method {object_type.name}.{method.name}')
-
-            arg_types: List[Type] = []
-            for arg in node.args:
-                arg_types.append(self.visit(arg, scope.create_child()))
-            for arg_type, param_type in zip(arg_types, method.param_types):
-                if not arg_type.conforms_to(param_type):
-                    self.errors.append(f'Incorrect argument type in method {object_type.name}.{method.name}:'
-                                       + INCOMPATIBLE_TYPES % (arg_type.name, param_type.name))
-        except SemanticError as error:
-            self.errors.append(str(error))
-            return_type = ErrorType()
-        return return_type
-
     @visitor.when(ConditonalNode)
     def visit(self, node: ConditonalNode, scope: Scope):
         condition_type: Type = self.visit(node.condition, scope.create_child())
@@ -174,7 +127,7 @@ class TypeChecker:
         then_type: Type = self.visit(node.then_body, scope.create_child())
         else_type: Type = self.visit(node.else_body, scope.create_child())
 
-        return least_type(then_type, else_type)
+        return Type.least_type(then_type, else_type)
 
     @visitor.when(LoopNode)
     def visit(self, node: LoopNode, scope: Scope):
@@ -184,8 +137,7 @@ class TypeChecker:
             self.errors.append(INCOMPATIBLE_TYPES % (condition_type.name, bool_type.name))
 
         child_scope = scope.create_child()
-        for expr in node.body:
-            self.visit(expr, child_scope)
+        self.visit(node.body, child_scope)
 
         return self.context.get_type('Object')
 
@@ -197,13 +149,13 @@ class TypeChecker:
             var_type: Type = self.context.get_type(var.typex)
             child_scope.define_variable(var.id, var_type)
             if var.expr is not None:
-                var_expr_type: Type = self.visit(var.expr)
+                var_expr_type: Type = self.visit(var.expr, child_scope)
                 if not var_expr_type.conforms_to(var_type):
                     self.errors.append(INCOMPATIBLE_TYPES % (var_expr_type.name, var_type.name))
 
         return_type: Type = self.context.get_type('Void')
-        for expr in node.in_expr:
-            return_type = self.visit(expr, child_scope)
+        if node.in_expr is not None:
+            return_type = self.visit(node.in_expr, child_scope)
 
         return return_type
 
@@ -213,11 +165,13 @@ class TypeChecker:
         case_types: List[Type] = []
         for option in node.options:
             option: CaseOptionNode
-            typex: Type = self.context.get_type(option.type)
+            child_scope: Scope = scope.create_child()
+            option_type: Type = self.context.get_type(option.type)
+            child_scope.define_variable(option.id, option_type)
+            typex: Type = self.visit(option.expr, child_scope)
             case_types.append(typex)
-            self.visit(option.expr, scope.create_child())
 
-        return least_type(*case_types)
+        return Type.least_type(*case_types)
 
     @visitor.when(BlocksNode)
     def visit(self, node: BlocksNode, scope: Scope):
@@ -247,4 +201,43 @@ class TypeChecker:
             self.errors.append(INVALID_OPERATION % (left_expr_type.name, right_expr_type.name))
         return bool_type
 
+    @visitor.when(VariableNode)
+    def visit(self, node: VariableNode, scope: Scope):
+        if scope.is_defined(node.lex):
+            var: VariableInfo = scope.find_variable(node.lex)
+            return var.type
+        try:
+            att: Attribute = self.current_type.get_attribute(node.lex)
+            return att.type
+        except:
+            self.errors.append(VARIABLE_NOT_DEFINED % (node.lex, self.current_type.name))
+            return ErrorType()
 
+    @visitor.when(InstantiateNode)
+    def visit(self, node: InstantiateNode, scope: Scope):
+        try:
+            new_type: Type = self.context.get_type(node.lex)
+            return new_type
+        except:
+            self.errors.append(f'Type {node.lex} not defined')
+            return ErrorType()
+
+    @visitor.when(ConstantNumNode)
+    def visit(self, node: ConstantNumNode, scope: Scope):
+        return self.context.get_type('Int')
+
+    @visitor.when(BooleanNode)
+    def visit(self, node: BooleanNode, scope: Scope):
+        return self.context.get_type('Bool')
+
+    @visitor.when(StringNode)
+    def visit(self, node: StringNode, scope: Scope):
+        return self.context.get_type('String')
+
+    @visitor.when(IsVoidNode)
+    def visit(self, node: IsVoidNode, scope: Scope):
+        return self.context.get_type('Bool')
+
+    @visitor.when(NotNode)
+    def visit(self, node: NotNode, scope: Scope):
+        return self.context.get_type('Bool')

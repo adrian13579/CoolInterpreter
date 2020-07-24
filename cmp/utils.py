@@ -2,7 +2,6 @@ from cmp.pycompiler import Production, Sentence, Symbol, EOF, Epsilon
 
 
 class TrieNode:
-
     def __init__(self, value, terminating=False):
         self.value = value
         self.children = {}
@@ -10,7 +9,6 @@ class TrieNode:
 
 
 class Trie:
-
     def __init__(self):
         self.root = TrieNode(' ')
 

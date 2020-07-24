@@ -79,9 +79,10 @@ factor %= new + idx, lambda h, s: InstantiateNode(s[2])
 
 atom %= intx, lambda h, s: ConstantNumNode(s[1])
 atom %= idx, lambda h, s: VariableNode(s[1])
-atom %= factor + at + idx + dot + idx + opar + arg_list + cpar, lambda h, s: MethodCallTypeNode(s[1], s[3], s[5], s[7])
-atom %= factor + dot + idx + opar + arg_list + cpar, lambda h, s: MethodCallNoTypeNode(s[1], s[3], s[5])
-atom %= idx + opar + arg_list + cpar, lambda h, s: MethodCallNode(s[1], s[3])
+atom %= factor + at + idx + dot + idx + opar + arg_list + cpar, lambda h, s: MethodCallNode(expr=s[1], typex=s[3],
+                                                                                            idx=s[5], args=s[7])
+atom %= factor + dot + idx + opar + arg_list + cpar, lambda h, s: MethodCallNode(expr=s[1], idx=s[3], args=s[5])
+atom %= idx + opar + arg_list + cpar, lambda h, s: MethodCallNode(idx=s[1], args=s[3])
 atom %= string, lambda h, s: StringNode(s[1])
 
 arg_list %= expr, lambda h, s: [s[1]]

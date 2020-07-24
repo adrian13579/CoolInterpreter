@@ -21,7 +21,7 @@ class Symbol(object):
 
     def __or__(self, other):
 
-        if isinstance(other, (Sentence)):
+        if isinstance(other, Sentence):
             return SentenceList(Sentence(self), other)
 
         raise TypeError(other)
@@ -42,7 +42,7 @@ class NonTerminal(Symbol):
 
     def __imod__(self, other):
 
-        if isinstance(other, (Sentence)):
+        if isinstance(other, Sentence):
             p = Production(self, other)
             self.Grammar.Add_Production(p)
             return self
@@ -276,7 +276,7 @@ class AttributeProduction(Production):
         pass
 
 
-class Grammar():
+class Grammar:
 
     def __init__(self):
 
@@ -321,7 +321,7 @@ class Grammar():
         if len(self.Productions) == 0:
             self.pType = type(production)
 
-        # assert type(production) == self.pType, "The Productions most be of only 1 type."
+        assert type(production) == self.pType, "The Productions most be of only 1 type."
 
         production.Left.productions.append(production)
         self.Productions.append(production)
@@ -387,7 +387,7 @@ class Grammar():
             productions.append({'Head': head, 'Body': body})
 
         d = {'NonTerminals': [symb.Name for symb in self.nonTerminals],
-             'Terminals': [symb.Name for symb in self.terminals], \
+             'Terminals': [symb.Name for symb in self.terminals],
              'Productions': productions}
 
         # [{'Head':p.Left.Name, "Body": [s.Name for s in p.Right]} for p in self.Productions]

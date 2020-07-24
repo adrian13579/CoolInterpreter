@@ -4,25 +4,20 @@ from cmp.utils import ContainerSet
 
 def compute_local_first(firsts, alpha):
     first_alpha = ContainerSet()
-
     try:
         alpha_is_epsilon = alpha.IsEpsilon
     except:
         alpha_is_epsilon = False
-
     if alpha_is_epsilon:
         first_alpha.set_epsilon()
     else:
         for x in alpha:
             symbol_first = firsts[x]
-
             first_alpha.update(symbol_first)
-
             if not symbol_first.contains_epsilon:
                 break
         else:
             first_alpha.set_epsilon()
-
     # First(alpha)
     return first_alpha
 

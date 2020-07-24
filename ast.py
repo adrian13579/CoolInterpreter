@@ -1,9 +1,12 @@
+from typing import List
+
+
 class Node:
     pass
 
 
 class ProgramNode(Node):
-    def __init__(self, declarations):
+    def __init__(self, declarations: List['ClassDeclarationNode']):
         self.declarations = declarations
 
 
@@ -51,41 +54,28 @@ class AssignNode(ExpressionNode):
 
 
 class MethodCallNode(ExpressionNode):
-    def __init__(self, idx, args):
+    def __init__(self, expr=None, typex=None, idx=None, args=None):
+        self.expr = expr
+        self.type = typex
         self.id = idx
         self.args = args
-
-
-class MethodCallTypeNode(ExpressionNode):
-    def __init__(self, object_expr, typex, idx, args):
-        self.id = idx
-        self.args = args
-        self.object_expr = object_expr
-        self.typex = typex
-
-
-class MethodCallNoTypeNode(ExpressionNode):
-    def __init__(self, object_expr, idx, args):
-        self.idx = idx
-        self.args = args
-        self.object_expr = object_expr
 
 
 class ConditonalNode(ExpressionNode):
-    def __init__(self, condition, then_body, else_body):
+    def __init__(self, condition: ExpressionNode, then_body: ExpressionNode, else_body: ExpressionNode):
         self.condition = condition
         self.then_body = then_body
         self.else_body = else_body
 
 
 class LoopNode(ExpressionNode):
-    def __init__(self, condition, body):
+    def __init__(self, condition: ExpressionNode, body: ExpressionNode):
         self.condition = condition
         self.body = body
 
 
 class LetNode(ExpressionNode):
-    def __init__(self, var_decl_list, in_expr):
+    def __init__(self, var_decl_list: List[VarDeclarationNode], in_expr: ExpressionNode):
         self.var_decl_list = var_decl_list
         self.in_expr = in_expr
 

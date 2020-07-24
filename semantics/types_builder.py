@@ -1,12 +1,11 @@
 from typing import List
-
 from ast import ProgramNode, ClassDeclarationNode, MethodDeclarationNode, VarDeclarationNode, AttrDeclarationNode
 from cmp import visitor
-from cmp.semantic import Type, SemanticError, ErrorType, VoidType, Context, Method
+from semantics.types import Type, SemanticError, ErrorType, Context, Method
 
 
 class TypeBuilder:
-    def __init__(self, context, errors=None):
+    def __init__(self, context: Context, errors: List[str] = None):
         if errors is None:
             errors = []
         self.context = context
@@ -68,6 +67,8 @@ class TypeBuilder:
             param: VarDeclarationNode
             try:
                 param_type: Type = self.context.get_type(param.typex)
+                if param_type.name == 'SELF_TYPE':
+                    param_type = self.current_type
             except SemanticError as error:
                 self.errors.append(str(error))
                 param_type = ErrorType()
@@ -76,6 +77,8 @@ class TypeBuilder:
 
         try:
             return_type = self.context.get_type(node.type)
+            if return_type.name == 'SELF_TYPE':
+                return_type = self.current_type
         except SemanticError as error:
             self.errors.append(str(error))
             return_type = ErrorType()
