@@ -49,7 +49,7 @@ class CoolTokenizer:
             ('new_line', '\n'),
             ('space', '« »∀'),
             ('tab', '\t'),
-            ('comment', f'{comment_dashes}|{comment_star}')
+            ('comment', f'{comment_dashes}§{comment_star}')
         ], G.EOF)
 
     def __call__(self, text: str) -> List[Token]:
@@ -90,3 +90,5 @@ stringx = f'"«{alf}§.§;§:§(§)§.§,§:§;§ §_§{num}§\§n§b§t§f»∀
 identifier = f'«_»∀«{alf}»«{alf}§_§{num}»∀'
 comment_dashes = f'--«{alf}§_§ §{num}»∀\n'
 comment_star = f'(*«{alf}§_§ §\n§{num}»∀*)'
+
+# TODO  Fix Problem: Tokenizer does not recognize comment of the form (*...*)

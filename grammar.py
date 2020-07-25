@@ -46,7 +46,7 @@ params_list %= param + comma + params_list, lambda h, s: [s[1]] + s[3]
 params_list %= param, lambda h, s: [s[1]]
 params_list %= G.Epsilon, lambda h, s: []
 
-param %= idx + colon + idx, lambda h, s: VarDeclarationNode(s[1], s[2])
+param %= idx + colon + idx, lambda h, s: VarDeclarationNode(s[1], s[3])
 
 expr_list %= expr + semi, lambda h, s: [s[1]]
 expr_list %= expr + semi + expr_list, lambda h, s: [s[1]] + s[3]

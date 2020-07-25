@@ -11,22 +11,23 @@ for i, file in enumerate(os.listdir('semantics_tests')):
     txt = open('semantics_tests/' + file)
     code = txt.read()
 
-    print('Test {} started:'.format(i))
-    tokens = list(tokenizer(code))
-    print('Tokens:')
-    print(tokens, '\n')
-    parse, operations = parser(tokens, get_shift_reduce=True)
-    print('Parsing:')
-    for j in parse: print(j)
-    ast = evaluate_reverse_parse(parse, operations, tokens)
-    print(ast)
+    if i == 1:
+        print('Test {} started:'.format(i))
+        tokens = list(tokenizer(code))
+        print('Tokens:')
+        print(tokens, '\n')
+        parse, operations = parser(tokens, get_shift_reduce=True)
+        print('Parsing:')
+        for j in parse: print(j)
+        ast = evaluate_reverse_parse(parse, operations, tokens)
+        print(ast)
 
-    if ast is not None:
-        errors = []
-        context = Context()
-        scope = Scope()
+        if ast is not None:
+            errors = []
+            context = Context()
+            scope = Scope()
 
-        TypeCollector(context, errors).visit(ast)
-        TypeBuilder(context, errors).visit(ast)
-        print(context)
-        TypeInferencer(context, scope, errors).visit(ast, scope)
+            TypeCollector(context, errors).visit(ast)
+            TypeBuilder(context, errors).visit(ast)
+            print(context)
+            TypeInferencer(context, scope, errors).visit(ast, scope)

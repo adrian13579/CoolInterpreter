@@ -1,4 +1,4 @@
-from typing import Dict, List, Union
+from typing import Dict, List, Union, Optional
 
 import ast
 from cmp import visitor
@@ -14,7 +14,7 @@ class TypeInferencer:
         self.scope = scope
 
         self.functions: Dict[(str, str), FunctionType] = self.collect_functions(context)
-        self.attributes:  Dict[(str, str), Type] = self.collect_attributes(context)
+        self.attributes: Dict[(str, str), Type] = self.collect_attributes(context)
 
         self.current_type: Type = None
         self.current_method: Method = None
@@ -24,7 +24,7 @@ class TypeInferencer:
         attributes: Dict[(str, str), Type] = {}
         for typex in context.types.values():
             for attr in typex.attributes:
-                attr_type = attr.type if attr.type.name == 'AUTO_TYPE' else TypeVariable()
+                attr_type = TypeVariable() if attr.type.name == 'AUTO_TYPE' else attr.type
                 attributes[typex.name, attr.name] = attr_type
         return attributes
 
@@ -39,11 +39,34 @@ class TypeInferencer:
                         param_types.append(TypeVariable())
                     else:
                         param_types.append(param)
-                return_type = method.return_type if method.return_type.name != 'AUTO_TYPE' else TypeVariable()
+                return_type = TypeVariable() if method.return_type.name == 'AUTO_TYPE' else method.return_type
                 functions[typex.name, method.name] = FunctionType(param_types, return_type)
         return functions
 
-    # def get_function(self,type: Type,):
+    def get_function(self, typex: Type, func_name: str) -> Optional[FunctionType]:
+        return self.aux_get_function(typex, typex, func_name)
+
+    def aux_get_function(self, init_type: Type, typex: Type, func_name: str) -> Optional[FunctionType]:
+        try:
+            func_type = self.functions[typex.name, func_name]
+            params_type = [init_type if param.name == 'SELF_TYPE' else param for param in func_type.params_types]
+            return_type = init_type if func_type.return_type.name == 'SELF_TYPE' else func_type.return_type
+            return FunctionType(params_type, return_type)
+        except KeyError:
+            if typex.parent is not None:
+                return self.aux_get_function(init_type, typex.parent, func_name)
+
+    def get_atribute(self, typex: Type, attr_name) -> Optional[Type]:
+        return self.aux_get_attribute(typex, typex, attr_name)
+
+    def aux_get_attribute(self, init_type: Type, typex: Type, attr_name) -> Optional[Type]:
+        try:
+            att_type = self.attributes[typex.name, attr_name]
+            return init_type if att_type.name == 'SELF_TYPE' else att_type
+        except KeyError:
+            if typex.parent is not None:
+                return self.aux_get_attribute(init_type, typex.parent, attr_name)
+
     @visitor.on('node')
     def visit(self, node, scope: Scope):
         pass
@@ -58,6 +81,8 @@ class TypeInferencer:
     def visit(self, node: ast.ClassDeclarationNode, scope: Scope) -> None:
         attrs = [feature for feature in node.features if isinstance(feature, ast.AttrDeclarationNode)]
         methods = [feature for feature in node.features if isinstance(feature, ast.MethodDeclarationNode)]
+
+        scope.define_variable('self', self.current_type)
 
         subst: Subst = {}
         for attr in attrs:
@@ -80,11 +105,11 @@ class TypeInferencer:
             attr_type = self.apply_subst_to_type(subst2, attr_type)
             return attr_type, self.compound_subst([subst1, subst2])
         else:
-            return self.attributes[node.id], {}
+            return self.get_atribute(self.current_type, node.id), {}
 
     @visitor.when(ast.MethodDeclarationNode)
     def visit(self, node: ast.MethodDeclarationNode, scope: Scope) -> (FunctionType, Subst):
-        function = self.functions[self.current_type.name, self.current_method.name]
+        function = self.get_function(self.current_type, self.current_method.name)
         for param_type, param in zip(function.params_types, node.params):
             scope.define_variable(param.id, param_type)
 
@@ -109,15 +134,16 @@ class TypeInferencer:
 
     @visitor.when(ast.AssignNode)
     def visit(self, node: ast.AssignNode, scope: Scope) -> (Type, Subst):
-        if scope.is_defined(node.id):
-            expr_type, subst1 = self.visit(node.expr, scope.create_child())
-            var_info = scope.find_variable(node.id)
-            subst2 = self.unify(var_info.type, expr_type)
-            var_info.type = self.apply_subst_to_type(subst2, var_info.type)
-            return var_info.type, self.compound_subst([subst1, subst2])
+        expr_type, subst1 = self.visit(node.expr, scope.create_child())
+        var_type = scope.find_variable(node.id)
+        if var_type is None:  # check if is an attribute
+            var_type = self.get_atribute(self.current_type, node.id)
+        subst2 = self.unify(var_type, expr_type)
+        var_type = self.apply_subst_to_type(subst2, var_type)
+        return var_type, self.compound_subst([subst1, subst2])
 
     @visitor.when(ast.BlocksNode)
-    def visit(self, node: ast.BlocksNode, scope: Scope):
+    def visit(self, node: ast.BlocksNode, scope: Scope) -> (Type, Subst):
         child_scope = scope.create_child()
         expr_type = self.context.get_type('Void')
         subst1: Subst = {}
@@ -134,15 +160,15 @@ class TypeInferencer:
             obj_type, subst1 = self.visit(node.expr, scope)
 
         if node.type is None:
-            type_name = obj_type.name
+            typex = obj_type
         else:
-            type_name = self.context.get_type(node.type)
+            typex = self.context.get_type(node.type)
 
         # checks if the type is known
-        if type_name[0] == 't':
+        if typex.name[0] == 't':
             self.errors.append('Inference error')
         else:
-            function = self.functions[type_name, node.id]
+            function = self.get_function(typex, node.id)
             args_type: List[Type] = []
             for arg in node.args:
                 arg_type, subst2 = self.visit(arg, scope)
@@ -150,7 +176,6 @@ class TypeInferencer:
                 args_type.append(arg_type)
             subst2 = self.unify(function, FunctionType(args_type, function.return_type))
             function_type = self.apply_subst_to_type(subst2, function)
-            self.functions[type_name, node.id] = function_type
             subst1 = self.compound_subst([subst1, subst2])
             return_type = self.apply_subst_to_type(subst1, function_type.return_type)
             subst2 = self.unify(function_type.return_type, return_type)
@@ -202,6 +227,16 @@ class TypeInferencer:
 
         return int_type, self.compound_subst([subst1, subst2])
 
+    @visitor.when(ast.VariableNode)
+    def visit(self, node: ast.VariableNode, scope: Scope) -> (Type, Subst):
+        var_info = scope.find_variable(node.lex)
+        if var_info is not None:
+            return var_info.type, {}
+        try:
+            return self.attributes[self.current_type.name], {}
+        except KeyError:
+            return ErrorType(), {}
+
     @visitor.when(ast.ConstantNumNode)
     def visit(self, node: ast.ConstantNumNode, scope: Scope) -> (Type, Subst):
         return self.context.get_type('Int'), {}
@@ -214,37 +249,27 @@ class TypeInferencer:
     def visit(self, node: ast.BooleanNode, scope: Scope) -> (Type, Subst):
         return self.context.get_type('Bool'), {}
 
-    @visitor.when(ast.VariableNode)
-    def visit(self, node: ast.VariableNode, scope: Scope) -> (Type, Subst):
-        try:
-            return self.scope.find_variable(node.lex).type, {}
-        except:
-            try:
-                return self.attributes[self.current_type.name], {}
-            except:
-                return ErrorType(), {}
-
     @visitor.when(ast.InstantiateNode)
     def visit(self, node: ast.InstantiateNode, scope: Scope) -> (Type, Subst):
         return self.context.get_type(node.lex), {}
 
-    def apply_subst_to_env(self, subst: Subst):
+    def apply_subst_to_env(self, subst: Subst) -> None:
         self.apply_subst_to_scope(subst, self.scope)
         self.apply_subst_to_functions(subst)
         self.apply_subst_to_attr(subst)
 
-    def apply_subst_to_scope(self, subst: Subst, scope: Scope):
+    def apply_subst_to_scope(self, subst: Subst, scope: Scope) -> None:
         for var_info in scope.locals:
             var_info.type = self.apply_subst_to_type(subst, var_info.type)
         for child in scope.children:
             self.apply_subst_to_scope(subst, child)
 
-    def apply_subst_to_functions(self, subst: Subst):
+    def apply_subst_to_functions(self, subst: Subst) -> None:
         for name in self.functions:
-            typex = self.functions[name.split('@')]
+            typex = self.functions[name]
             self.functions[name] = self.apply_subst_to_type(subst, typex)
 
-    def apply_subst_to_attr(self, subst: Subst):
+    def apply_subst_to_attr(self, subst: Subst) -> None:
         for name in self.attributes:
             typex = self.attributes[name]
             self.attributes[name] = self.apply_subst_to_type(subst, typex)
@@ -301,6 +326,9 @@ class TypeInferencer:
                 substitutions.append(self.unify(i, j))
             substitutions.append(self.unify(type1.return_type, type2.return_type))
             return self.compound_subst(substitutions)
+        elif isinstance(type1, Type) and isinstance(type2, Type) and \
+                type1.name == type2.name:
+            return {}
         else:
             raise Exception('Type mismatch')
 
