@@ -63,6 +63,7 @@ expr %= cmp, lambda h, s: s[1]
 
 cmp %= cmp + less + arith, lambda h, s: LessNode(s[1], s[3])
 cmp %= cmp + less_equal + arith, lambda h, s: LessOrEqualNode(s[1], s[3])
+cmp %= cmp + equal + arith, lambda h, s: EqualsNode(s[1], s[3])
 cmp %= arith, lambda h, s: s[1]
 
 arith %= arith + plus + term, lambda h, s: PlusNode(s[1], s[3])

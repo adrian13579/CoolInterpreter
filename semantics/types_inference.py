@@ -2,7 +2,7 @@ from typing import Dict, List, Union, Optional
 
 import ast
 from cmp import visitor
-from semantics.types import Context, Scope, Type, TypeVariable, FunctionType, VariableInfo, Method, ErrorType
+from semantics.types import Context, Scope, Type, TypeVariable, FunctionType, Method, ErrorType
 
 Subst = Dict[str, Type]
 
@@ -123,21 +123,25 @@ class TypeInferencer:
 
     @visitor.when(ast.LetNode)
     def visit(self, node: ast.LetNode, scope: Scope) -> (Type, Subst):
-        subst = {}
+        subst: Subst = {}
+        child_scope = scope.create_child()
         for var in node.var_decl_list:
-            var_type, subst1 = self.visit(var, scope)
+            var_type, subst1 = self.visit(var, child_scope)
+            # child_scope.define_variable(var.id, var_type)
             subst = self.compound_subst([subst, subst1])
 
-        body_type, subst2 = self.visit(node.in_expr, scope.create_child())
+        body_type, subst2 = self.visit(node.in_expr, child_scope)
         subst = self.compound_subst([subst, subst2])
         return body_type, subst
 
     @visitor.when(ast.AssignNode)
     def visit(self, node: ast.AssignNode, scope: Scope) -> (Type, Subst):
         expr_type, subst1 = self.visit(node.expr, scope.create_child())
-        var_type = scope.find_variable(node.id)
-        if var_type is None:  # check if is an attribute
+        var_info = scope.find_variable(node.id)
+        if var_info is None:  # check if is an attribute
             var_type = self.get_atribute(self.current_type, node.id)
+        else:
+            var_type = var_info.type
         subst2 = self.unify(var_type, expr_type)
         var_type = self.apply_subst_to_type(subst2, var_type)
         return var_type, self.compound_subst([subst1, subst2])
@@ -192,7 +196,7 @@ class TypeInferencer:
     @visitor.when(ast.VarDeclarationNode)
     def visit(self, node: ast.VarDeclarationNode, scope: Scope) -> (Type, Subst):
         subst: Subst = {}
-        var_type = self.context.get_type(node.id)
+        var_type = self.context.get_type(node.typex)
         if var_type.name == 'AUTO_TYPE':
             var_type = TypeVariable()
         if node.expr is not None:
@@ -232,10 +236,18 @@ class TypeInferencer:
         var_info = scope.find_variable(node.lex)
         if var_info is not None:
             return var_info.type, {}
-        try:
-            return self.attributes[self.current_type.name], {}
-        except KeyError:
+        var_type = self.get_atribute(self.current_type, node.lex)
+        if var_type is None:
             return ErrorType(), {}
+        return var_type, {}
+
+    @visitor.when(ast.NotNode)
+    def visit(self, node: ast.NotNode, scope: Scope) -> (Type, Subst):
+        return self.context.get_type('Bool'), {}
+
+    @visitor.when(ast.IsVoidNode)
+    def visit(self, node: ast.IsVoidNode, scope: Scope) -> (Type, Subst):
+        return self.context.get_type('Bool'), {}
 
     @visitor.when(ast.ConstantNumNode)
     def visit(self, node: ast.ConstantNumNode, scope: Scope) -> (Type, Subst):
@@ -321,7 +333,7 @@ class TypeInferencer:
             return self.var_bind(type2.name, type1)
         elif isinstance(type1, FunctionType) and isinstance(type2, FunctionType) \
                 and len(type1.params_types) == len(type2.params_types):
-            substitutions: List[Dict[str, Type]] = []
+            substitutions: List[Subst] = []
             for i, j in zip(type1.params_types, type2.params_types):
                 substitutions.append(self.unify(i, j))
             substitutions.append(self.unify(type1.return_type, type2.return_type))
