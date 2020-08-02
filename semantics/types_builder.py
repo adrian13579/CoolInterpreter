@@ -1,7 +1,7 @@
 from typing import List
 from ast import ProgramNode, ClassDeclarationNode, MethodDeclarationNode, VarDeclarationNode, AttrDeclarationNode
 from cmp import visitor
-from semantics.types import Type, SemanticError, ErrorType, Context, Method
+from utils import Type, SemanticError, ErrorType, Context, Method
 
 
 class TypeBuilder:

@@ -1,6 +1,7 @@
 from ast import *
 from cmp import visitor
-from semantics.types import Context, Scope, Type, Method, ErrorType, SemanticError, Attribute, VariableInfo
+from utils import Scope, VariableInfo
+from utils import Context, Type, Method, ErrorType, Attribute
 from semantics import INCOMPATIBLE_TYPES, WRONG_SIGNATURE, LOCAL_ALREADY_DEFINED, VARIABLE_NOT_DEFINED, \
     INVALID_OPERATION
 

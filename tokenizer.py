@@ -6,6 +6,7 @@ from grammar import *
 class CoolTokenizer:
     def __init__(self):
         self.lexer = Lexer([
+            ('comment', f'{comment_dashes}§{comment_star}'),
             (classx, 'class'),
             (inherits, 'inherits'),
             (let, 'let'),
@@ -49,7 +50,6 @@ class CoolTokenizer:
             ('new_line', '\n'),
             ('space', '« »∀'),
             ('tab', '\t'),
-            ('comment', f'{comment_dashes}§{comment_star}')
         ], G.EOF)
 
     def __call__(self, text: str) -> List[Token]:

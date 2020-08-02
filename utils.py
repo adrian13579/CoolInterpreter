@@ -1,9 +1,15 @@
 import itertools as itt
 from collections import OrderedDict
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional, Union, Any
 
 
 class SemanticError(Exception):
+    @property
+    def text(self) -> str:
+        return self.args[0]
+
+
+class CoolRuntimeError(Exception):
     @property
     def text(self) -> str:
         return self.args[0]
@@ -124,6 +130,11 @@ class Type:
         return str(self)
 
 
+class VoidType(Type):
+    def __init__(self):
+        Type.__init__(self, 'void')
+
+
 class ErrorType(Type):
     def __init__(self):
         Type.__init__(self, '<error>')
@@ -192,6 +203,46 @@ class Attribute:
         return str(self)
 
 
+class CoolObject:
+    def __init__(self, typex: Type, value: Any = None):
+        self.type = typex
+        self._value = value
+        self.atributes: Dict[str, CoolObject] = {}
+
+    @property
+    def value(self):
+        if self._value is None:
+            return self
+        return self._value
+
+    def set_attibute(self, name: str, value: 'CoolObject') -> None:
+        try:
+            self.type.get_attribute(name)
+            self.atributes[name] = value
+        except:
+            raise CoolRuntimeError(f'Object {self.type.name} does not have an attribute named {name}')
+
+    def get_attribute(self, name) -> Union[Attribute, 'CoolObject']:
+        try:
+            return self.atributes[name]
+        except KeyError:
+            return self.type.get_attribute(name)
+
+    def get_method(self, name: str, typex: Type) -> Optional[Method]:
+        tmp_type = self.type
+        while tmp_type != typex:
+            if tmp_type.parent is not None:
+                tmp_type = tmp_type.parent
+            else:
+                return None
+        return tmp_type.get_method(name)
+
+
+class VoidObject(CoolObject):
+    def __init__(self):
+        CoolObject.__init__(self, VoidType())
+
+
 class Context:
     def __init__(self):
         self.types: Dict[str, Type] = {}
@@ -216,9 +267,10 @@ class Context:
 
 
 class VariableInfo:
-    def __init__(self, name: str, vtype: Type):
+    def __init__(self, name: str, vtype: Type, value=None):
         self.name = name
         self.type = vtype
+        self.value = value
 
 
 class Scope:
@@ -236,8 +288,8 @@ class Scope:
         self.children.append(child)
         return child
 
-    def define_variable(self, vname: str, vtype: Type) -> VariableInfo:
-        info = VariableInfo(vname, vtype)
+    def define_variable(self, vname: str, vtype: Type, value: CoolObject = None) -> VariableInfo:
+        info = VariableInfo(vname, vtype, value)
         self.locals.append(info)
         return info
 

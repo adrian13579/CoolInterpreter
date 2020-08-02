@@ -2,7 +2,7 @@ from typing import List
 
 from ast import ProgramNode, ClassDeclarationNode
 from cmp import visitor
-from semantics.types import Context, ErrorType, Type
+from utils import Context, ErrorType, Type, VoidType
 
 
 class TypeCollector(object):
@@ -17,7 +17,7 @@ class TypeCollector(object):
     @visitor.when(ProgramNode)
     def visit(self, node: ProgramNode):
         self.context.types['<error>'] = ErrorType()
-        self.context.types['Void'] = Type('Void')
+        self.context.types['Void'] = VoidType()
         self_type = self.context.types['SELF_TYPE'] = Type('SELF_TYPE')
         self.context.types['AUTO_TYPE'] = Type('AUTO_TYPE')
 

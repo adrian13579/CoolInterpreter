@@ -2,7 +2,9 @@ from typing import Dict, List, Union, Optional
 
 import ast
 from cmp import visitor
-from semantics.types import Context, Scope, Type, TypeVariable, FunctionType, Method, ErrorType
+from utils import Scope
+from utils import Context, Type, TypeVariable, FunctionType, Method, ErrorType
+
 
 Subst = Dict[str, Type]
 
@@ -338,9 +340,11 @@ class TypeInferencer:
                 substitutions.append(self.unify(i, j))
             substitutions.append(self.unify(type1.return_type, type2.return_type))
             return self.compound_subst(substitutions)
-        elif isinstance(type1, Type) and isinstance(type2, Type) and \
-                type1.name == type2.name:
-            return {}
+        elif isinstance(type1, Type) and isinstance(type2, Type):
+            if type1.name == type2.name:
+                return {}
+            elif type2.conforms_to(type1) or type1.conforms_to(type2):
+                return {}
         else:
             raise Exception('Type mismatch')
 

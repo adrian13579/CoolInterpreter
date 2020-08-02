@@ -1,8 +1,0 @@
-class Main {
-    main (): Int {
-        succ(1)
-     };
-
-    succ(n : AUTO_TYPE) : AUTO_TYPE { n + 1 };
-};
-
