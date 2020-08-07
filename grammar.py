@@ -52,7 +52,7 @@ expr_list %= expr + semi, lambda h, s: [s[1]]
 expr_list %= expr + semi + expr_list, lambda h, s: [s[1]] + s[3]
 
 expr %= idx + assigment + expr, lambda h, s: AssignNode(s[1], s[3])
-expr %= ifx + expr + thenx + expr + elsex + expr + fi, lambda h, s: ConditonalNode(s[2], s[4], s[6])
+expr %= ifx + expr + thenx + expr + elsex + expr + fi, lambda h, s: ConditionalNode(s[2], s[4], s[6])
 expr %= whilex + expr + loop + expr + pool, lambda h, s: LoopNode(s[2], s[4])
 expr %= ocur + expr_list + ccur, lambda h, s: BlocksNode(s[2])
 expr %= let + let_list + inx + expr, lambda h, s: LetNode(s[2], s[4])

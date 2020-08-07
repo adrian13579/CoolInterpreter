@@ -9,7 +9,7 @@ class Main {
 
 class A inherits IO {
     methodA(): AUTO_TYPE {
-        out_string("Hola")
+        out_string("Hello")
     };
 };
 

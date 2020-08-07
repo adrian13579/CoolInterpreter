@@ -23,6 +23,20 @@ class Type:
         self.parent = None
 
     @staticmethod
+    def types_distance(a: 'Type', b: 'Type') -> int:
+        distance = 0
+        if a.conforms_to(b):
+            down, up = a, b
+        elif b.conforms_to(a):
+            down, up = b, a
+        else:
+            return -1
+        while down != up:
+            down = down.parent
+            distance += 1
+        return distance
+
+    @staticmethod
     def least_type(*types) -> 'Type':
         types = list(types)
         typex: Type = types[0]
@@ -206,6 +220,13 @@ class Attribute:
 class CoolObject:
     def __init__(self, typex: Type, value: Any = None):
         self.type = typex
+        if value is None:
+            if typex.name == 'Int':
+                value = 0
+            elif typex.name == 'String':
+                value = ''
+            elif typex.name == 'Bool':
+                value = False
         self._value = value
         self.atributes: Dict[str, CoolObject] = {}
 
@@ -241,6 +262,9 @@ class CoolObject:
 class VoidObject(CoolObject):
     def __init__(self):
         CoolObject.__init__(self, VoidType())
+
+    def __eq__(self, other):
+        return isinstance(other, VoidObject)
 
 
 class Context:

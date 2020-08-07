@@ -88,7 +88,7 @@ num = '1§2§3§4§5§6§7§8§9§0'
 integer = '««1§2§3§4§5§6§7§8§9»«0§1§2§3§4§5§6§7§8§9»∀»§«0»'
 stringx = f'"«{alf}§.§;§:§(§)§.§,§:§;§ §_§{num}§\§n§b§t§f»∀"'
 identifier = f'«_»∀«{alf}»«{alf}§_§{num}»∀'
-comment_dashes = f'--«{alf}§_§ §{num}»∀\n'
-comment_star = f'(*«{alf}§_§ §\n§{num}»∀*)'
+comment_dashes = f'«--«{alf}§_§ §{num}»∀\n»'
+comment_star = f'«(*«{alf}§_§ §\n§{num}»∀*)»'
 
-# TODO  Fix Problem: Tokenizer does not recognize comment of the form (*...*)
+# TODO  Fix Problem: Tokenizer does not recognize comment of the form (*...*) and --

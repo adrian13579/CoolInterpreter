@@ -2,9 +2,7 @@ from typing import Dict, List, Union, Optional
 
 import ast
 from cmp import visitor
-from utils import Scope
-from utils import Context, Type, TypeVariable, FunctionType, Method, ErrorType
-
+from utils import Context, Type, TypeVariable, FunctionType, Method, ErrorType, Scope
 
 Subst = Dict[str, Type]
 
@@ -122,6 +120,16 @@ class TypeInferencer:
         function_type = self.apply_subst_to_type(subst2, function)
 
         return function_type, self.compound_subst([subst1, subst2])
+
+    @visitor.when(ast.ConditionalNode)
+    def visit(self, node: ast.ConditionalNode, scope: Scope):
+        bool_type = self.context.get_type('Bool')
+        cond_type, subst1 = self.visit(node.condition, scope)
+        subst2 = self.unify(bool_type, cond_type)
+        then_type, subst3 = self.visit(node.then_body, scope.create_child())
+        else_type, subst4 = self.visit(node.else_body, scope.create_child())
+        subst = self.compound_subst([subst1, subst2, subst3, subst4])
+        return self.context.get_type('Object'), subst
 
     @visitor.when(ast.LetNode)
     def visit(self, node: ast.LetNode, scope: Scope) -> (Type, Subst):
@@ -341,9 +349,7 @@ class TypeInferencer:
             substitutions.append(self.unify(type1.return_type, type2.return_type))
             return self.compound_subst(substitutions)
         elif isinstance(type1, Type) and isinstance(type2, Type):
-            if type1.name == type2.name:
-                return {}
-            elif type2.conforms_to(type1) or type1.conforms_to(type2):
+            if type1.name == type2.name or type2.conforms_to(type1) or type1.conforms_to(type2):
                 return {}
         else:
             raise Exception('Type mismatch')
@@ -358,5 +364,10 @@ class TypeInferencer:
         result: Subst = {}
         for name in s1:
             typex = s1[name]
-            result[name] = self.apply_subst_to_type(s2, typex)
+            if isinstance(typex, TypeVariable):
+                result[name] = self.apply_subst_to_type(s2, typex)
+            else:
+                result[name] = typex
         return {**result, **s2}
+
+

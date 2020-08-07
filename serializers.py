@@ -35,7 +35,7 @@ class ParserHandler:
 
     def save(self, path):
         if self._parser is None:
-            raise Exception('You must create an instance of tokenizer first')
+            raise Exception('You must create an instance of parser first')
         else:
             with open(path, 'wb') as parser:
                 dill.dump(self._parser, parser)

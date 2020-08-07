@@ -12,7 +12,7 @@ for i, file in enumerate(os.listdir('runtime_tests')):
     txt = open('runtime_tests/' + file)
     code = txt.read()
 
-    if i == 1:
+    if i == 3:
         print('Test {} started:'.format(i))
         tokens = list(tokenizer(code))
         print('Tokens:')

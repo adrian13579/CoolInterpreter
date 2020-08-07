@@ -2,6 +2,7 @@ class Main {
     main (): Int {
         1
      };
+
     iterative_fibonacci(n: AUTO_TYPE) : AUTO_TYPE {
         let  i: AUTO_TYPE <- 2, n1: AUTO_TYPE <- 1, n2: AUTO_TYPE <- 1 in {
             while i < n loop

@@ -1,8 +1,8 @@
-class Main {
+class Main inherits IO{
     a :Fact ;
     main(): Int {{
         a <- new Ackermann;
-        a.ackermann(2,3);
+        out_int(a.ackermann(1,3));
         }
     };
 };

@@ -61,7 +61,7 @@ class MethodCallNode(ExpressionNode):
         self.args = args
 
 
-class ConditonalNode(ExpressionNode):
+class ConditionalNode(ExpressionNode):
     def __init__(self, condition: ExpressionNode, then_body: ExpressionNode, else_body: ExpressionNode):
         self.condition = condition
         self.then_body = then_body
@@ -83,7 +83,7 @@ class LetNode(ExpressionNode):
 class CaseNode(ExpressionNode):
     def __init__(self, case_expr, options):
         self.case_expr = case_expr
-        self.options = options
+        self.options: List[CaseOptionNode] = options
 
 
 class CaseOptionNode(ExpressionNode):
