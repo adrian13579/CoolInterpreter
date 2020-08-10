@@ -1,6 +1,6 @@
 import itertools as itt
 from collections import OrderedDict
-from typing import List, Dict, Optional, Union, Any
+from typing import List, Dict, Optional, Union, Any, Tuple
 
 
 class SemanticError(Exception):
@@ -172,7 +172,7 @@ class TypeVariable(Type):
 
 
 class FunctionType(Type):
-    def __init__(self, params_types: List[Type], return_type: Type):
+    def __init__(self, params_types: Tuple[Type, ...], return_type: Type):
         super().__init__('Function')
         self.params_types = params_types
         self.return_type = return_type

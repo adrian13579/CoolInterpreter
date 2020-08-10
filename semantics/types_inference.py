@@ -1,10 +1,11 @@
-from typing import Dict, List, Union, Optional
-
+from typing import Dict, List, Optional, Set
+from collections import OrderedDict
 import ast
 from cmp import visitor
-from utils import Context, Type, TypeVariable, FunctionType, Method, ErrorType, Scope
+from utils import Context, Type, TypeVariable, FunctionType, Method, ErrorType, Scope, SemanticError
+import typing
 
-Subst = Dict[str, Type]
+TypeGraph = typing.OrderedDict[Type, Set[Type]]
 
 
 class TypeInferencer:
@@ -12,6 +13,9 @@ class TypeInferencer:
         self.errors = errors
         self.context = context
         self.scope = scope
+
+        self.substitutions: Dict[str, Type] = {}
+        self.types_graph: TypeGraph = OrderedDict()
 
         self.functions: Dict[(str, str), FunctionType] = self.collect_functions(context)
         self.attributes: Dict[(str, str), Type] = self.collect_attributes(context)
@@ -40,7 +44,7 @@ class TypeInferencer:
                     else:
                         param_types.append(param)
                 return_type = TypeVariable() if method.return_type.name == 'AUTO_TYPE' else method.return_type
-                functions[typex.name, method.name] = FunctionType(param_types, return_type)
+                functions[typex.name, method.name] = FunctionType(tuple(param_types), return_type)
         return functions
 
     def get_function(self, typex: Type, func_name: str) -> Optional[FunctionType]:
@@ -51,7 +55,7 @@ class TypeInferencer:
             func_type = self.functions[typex.name, func_name]
             params_type = [init_type if param.name == 'SELF_TYPE' else param for param in func_type.params_types]
             return_type = init_type if func_type.return_type.name == 'SELF_TYPE' else func_type.return_type
-            return FunctionType(params_type, return_type)
+            return FunctionType(tuple(params_type), return_type)
         except KeyError:
             if typex.parent is not None:
                 return self.aux_get_function(init_type, typex.parent, func_name)
@@ -77,101 +81,94 @@ class TypeInferencer:
             self.current_type = self.context.get_type(class_decl.id)
             self.visit(class_decl, scope.create_child())
 
+        self.dfs_inference()
+        print('Hello World!')
+
     @visitor.when(ast.ClassDeclarationNode)
     def visit(self, node: ast.ClassDeclarationNode, scope: Scope) -> None:
         attrs = [feature for feature in node.features if isinstance(feature, ast.AttrDeclarationNode)]
         methods = [feature for feature in node.features if isinstance(feature, ast.MethodDeclarationNode)]
 
         scope.define_variable('self', self.current_type)
-
-        subst: Subst = {}
         for attr in attrs:
-            typex, new_subst = self.visit(attr, scope)
-            subst = self.compound_subst([subst, new_subst])
-            self.apply_subst_to_env(subst)
+            typex = self.visit(attr, scope)
 
         for method in methods:
             self.current_method = self.current_type.get_method(method.id)
-            typex, new_subst = self.visit(method, scope.create_child())
-            subst = self.compound_subst([subst, new_subst])
-            self.apply_subst_to_env(subst)
+            typex = self.visit(method, scope.create_child())
 
     @visitor.when(ast.AttrDeclarationNode)
-    def visit(self, node: ast.AttrDeclarationNode, scope: Scope) -> (Type, Subst):
+    def visit(self, node: ast.AttrDeclarationNode, scope: Scope) -> Type:
         if node.expression is not None:
             expr_type, subst1 = self.visit(node.expression, scope.create_child())
             attr_type = self.attributes[node.id]
-            subst2 = self.unify(attr_type, expr_type)
-            attr_type = self.apply_subst_to_type(subst2, attr_type)
-            return attr_type, self.compound_subst([subst1, subst2])
+            self.unify(attr_type, expr_type)
+            return attr_type
         else:
-            return self.get_atribute(self.current_type, node.id), {}
+            return self.get_atribute(self.current_type, node.id)
 
     @visitor.when(ast.MethodDeclarationNode)
-    def visit(self, node: ast.MethodDeclarationNode, scope: Scope) -> (FunctionType, Subst):
+    def visit(self, node: ast.MethodDeclarationNode, scope: Scope) -> FunctionType:
         function = self.get_function(self.current_type, self.current_method.name)
         for param_type, param in zip(function.params_types, node.params):
             scope.define_variable(param.id, param_type)
 
-        body_type, subst1 = self.visit(node.body, scope)
-        self.apply_subst_to_scope(subst1, scope)
-        infer_param = [self.apply_subst_to_type(subst1, typex) for typex in function.params_types]
-        subst2 = self.unify(function, FunctionType(infer_param, body_type))
-        function_type = self.apply_subst_to_type(subst2, function)
-
-        return function_type, self.compound_subst([subst1, subst2])
+        body_type = self.visit(node.body, scope)
+        self.unify(function.return_type, body_type)
+        return function
 
     @visitor.when(ast.ConditionalNode)
     def visit(self, node: ast.ConditionalNode, scope: Scope):
         bool_type = self.context.get_type('Bool')
-        cond_type, subst1 = self.visit(node.condition, scope)
-        subst2 = self.unify(bool_type, cond_type)
-        then_type, subst3 = self.visit(node.then_body, scope.create_child())
-        else_type, subst4 = self.visit(node.else_body, scope.create_child())
-        subst = self.compound_subst([subst1, subst2, subst3, subst4])
-        return self.context.get_type('Object'), subst
+        cond_type = self.visit(node.condition, scope)
+        self.unify(bool_type, cond_type)
+        then_type = self.visit(node.then_body, scope.create_child())
+        else_type = self.visit(node.else_body, scope.create_child())
+        return self.context.get_type('Object')
+
+    @visitor.when(ast.CaseNode)
+    def visit(self, node: ast.CaseNode, scope: Scope):
+        _ = self.visit(node.case_expr, scope)
+        types: List[Type] = []
+        for option in node.options:
+            child_scope = scope.create_child()
+            child_scope.define_variable(option.id, self.context.get_type(option.type))
+            types.append(self.visit(option.expr, child_scope))
+        return self.context.get_type('Object')
 
     @visitor.when(ast.LetNode)
-    def visit(self, node: ast.LetNode, scope: Scope) -> (Type, Subst):
-        subst: Subst = {}
+    def visit(self, node: ast.LetNode, scope: Scope):
         child_scope = scope.create_child()
         for var in node.var_decl_list:
-            var_type, subst1 = self.visit(var, child_scope)
-            # child_scope.define_variable(var.id, var_type)
-            subst = self.compound_subst([subst, subst1])
-
-        body_type, subst2 = self.visit(node.in_expr, child_scope)
-        subst = self.compound_subst([subst, subst2])
-        return body_type, subst
+            var_type = self.visit(var, child_scope)
+        body_type = self.visit(node.in_expr, child_scope)
+        return body_type
 
     @visitor.when(ast.AssignNode)
-    def visit(self, node: ast.AssignNode, scope: Scope) -> (Type, Subst):
-        expr_type, subst1 = self.visit(node.expr, scope.create_child())
+    def visit(self, node: ast.AssignNode, scope: Scope):
+        expr_type = self.visit(node.expr, scope)
         var_info = scope.find_variable(node.id)
         if var_info is None:  # check if is an attribute
             var_type = self.get_atribute(self.current_type, node.id)
         else:
             var_type = var_info.type
-        subst2 = self.unify(var_type, expr_type)
-        var_type = self.apply_subst_to_type(subst2, var_type)
-        return var_type, self.compound_subst([subst1, subst2])
+        self.unify(var_type, expr_type)
+        return var_type
 
     @visitor.when(ast.BlocksNode)
-    def visit(self, node: ast.BlocksNode, scope: Scope) -> (Type, Subst):
+    def visit(self, node: ast.BlocksNode, scope: Scope):
         child_scope = scope.create_child()
         expr_type = self.context.get_type('Void')
-        subst1: Subst = {}
         for expr in node.expr_list:
-            expr_type, subst2 = self.visit(expr, child_scope)
-            subst1 = self.compound_subst([subst1, subst2])
-        return expr_type, subst1
+            expr_type = self.visit(expr, child_scope)
+        return expr_type
 
     @visitor.when(ast.MethodCallNode)
-    def visit(self, node: ast.MethodCallNode, scope: Scope) -> (Type, Subst):
+    def visit(self, node: ast.MethodCallNode, scope: Scope):
         if node.expr is None:
-            obj_type, subst1 = self.current_type, {}
+            obj_type = self.current_type
         else:
-            obj_type, subst1 = self.visit(node.expr, scope)
+            obj_type = self.visit(node.expr, scope)
 
         if node.type is None:
             typex = obj_type
@@ -185,189 +182,133 @@ class TypeInferencer:
             function = self.get_function(typex, node.id)
             args_type: List[Type] = []
             for arg in node.args:
-                arg_type, subst2 = self.visit(arg, scope)
-                subst1 = self.compound_subst([subst1, subst2])
+                arg_type = self.visit(arg, scope)
                 args_type.append(arg_type)
-            subst2 = self.unify(function, FunctionType(args_type, function.return_type))
-            function_type = self.apply_subst_to_type(subst2, function)
-            subst1 = self.compound_subst([subst1, subst2])
-            return_type = self.apply_subst_to_type(subst1, function_type.return_type)
-            subst2 = self.unify(function_type.return_type, return_type)
-            return return_type, self.compound_subst([subst1, subst2])
+            self.unify(function, FunctionType(tuple(args_type), function.return_type))
+            return function.return_type
 
     @visitor.when(ast.LoopNode)
-    def visit(self, node: ast.LoopNode, scope: Scope) -> (Type, Subst):
-        cond_type, subst1 = self.visit(node.condition, scope)
-        body_type, subst2 = self.visit(node.body, scope.create_child())
-        subst1 = self.compound_subst([subst1, subst2])
-        subst2 = self.unify(self.context.get_type('Bool'), cond_type)
-        return self.context.get_type('Object'), self.compound_subst([subst1, subst2])
+    def visit(self, node: ast.LoopNode, scope: Scope):
+        cond_type = self.visit(node.condition, scope)
+        body_type = self.visit(node.body, scope.create_child())
+        self.unify(self.context.get_type('Bool'), cond_type)
+        return self.context.get_type('Object')
 
     @visitor.when(ast.VarDeclarationNode)
-    def visit(self, node: ast.VarDeclarationNode, scope: Scope) -> (Type, Subst):
-        subst: Subst = {}
+    def visit(self, node: ast.VarDeclarationNode, scope: Scope) -> Type:
         var_type = self.context.get_type(node.typex)
         if var_type.name == 'AUTO_TYPE':
             var_type = TypeVariable()
         if node.expr is not None:
-            infer_type, subst = self.visit(node.expr, scope)
-            subst = self.compound_subst([self.unify(var_type, infer_type), subst])
-            var_type = self.apply_subst_to_type(subst, var_type)
+            var_type = self.visit(node.expr, scope)
         scope.define_variable(node.id, var_type)
-        return var_type, subst
+        return var_type
 
     @visitor.when(ast.ComparerNode)
-    def visit(self, node: ast.ComparerNode, scope: Scope) -> (Type, Subst):
+    def visit(self, node: ast.ComparerNode, scope: Scope) -> Type:
         bool_type = self.context.get_type('Bool')
         int_type = self.context.get_type('Int')
-        comparer_function = FunctionType([int_type, int_type], bool_type)
-        left, subst1 = self.visit(node.left, scope)
-        right, subst2 = self.visit(node.right, scope)
-
-        subst1 = self.compound_subst([subst1, subst2])
-        subst2 = self.unify(comparer_function, FunctionType([left, right], bool_type))
-
-        return bool_type, self.compound_subst([subst1, subst2])
+        comparer_function = FunctionType((int_type, int_type), bool_type)
+        left = self.visit(node.left, scope)
+        right = self.visit(node.right, scope)
+        self.unify(comparer_function, FunctionType((left, right), bool_type))
+        return bool_type
 
     @visitor.when(ast.ArithmeticNode)
-    def visit(self, node: ast.ArithmeticNode, scope: Scope) -> (Type, Subst):
+    def visit(self, node: ast.ArithmeticNode, scope: Scope) -> Type:
         int_type = self.context.get_type('Int')
-        arith_function = FunctionType([int_type, int_type], int_type)
-        left, subst1 = self.visit(node.left, scope)
-        right, subst2 = self.visit(node.right, scope)
-
-        subst1 = self.compound_subst([subst1, subst2])
-        subst2 = self.unify(arith_function, FunctionType([left, right], int_type))
-
-        return int_type, self.compound_subst([subst1, subst2])
+        arith_function = FunctionType((int_type, int_type), int_type)
+        left = self.visit(node.left, scope)
+        right = self.visit(node.right, scope)
+        self.unify(arith_function, FunctionType((left, right), int_type))
+        return int_type
 
     @visitor.when(ast.VariableNode)
-    def visit(self, node: ast.VariableNode, scope: Scope) -> (Type, Subst):
+    def visit(self, node: ast.VariableNode, scope: Scope) -> Type:
         var_info = scope.find_variable(node.lex)
         if var_info is not None:
-            return var_info.type, {}
+            return var_info.type
         var_type = self.get_atribute(self.current_type, node.lex)
         if var_type is None:
-            return ErrorType(), {}
-        return var_type, {}
+            return ErrorType()
+        return var_type
 
     @visitor.when(ast.NotNode)
-    def visit(self, node: ast.NotNode, scope: Scope) -> (Type, Subst):
-        return self.context.get_type('Bool'), {}
+    def visit(self, node: ast.NotNode, scope: Scope) -> Type:
+        bool_type = self.context.get_type('Bool')
+        expr_type = self.visit(node.lex, scope)
+        self.unify(bool_type, expr_type)
+        return bool_type
 
     @visitor.when(ast.IsVoidNode)
-    def visit(self, node: ast.IsVoidNode, scope: Scope) -> (Type, Subst):
-        return self.context.get_type('Bool'), {}
+    def visit(self, node: ast.IsVoidNode, scope: Scope) -> Type:
+        bool_type = self.context.get_type('Bool')
+        _ = self.visit(node.lex, scope)
+        return bool_type
 
     @visitor.when(ast.ConstantNumNode)
-    def visit(self, node: ast.ConstantNumNode, scope: Scope) -> (Type, Subst):
-        return self.context.get_type('Int'), {}
+    def visit(self, node: ast.ConstantNumNode, scope: Scope) -> Type:
+        return self.context.get_type('Int')
 
     @visitor.when(ast.StringNode)
-    def visit(self, node: ast.StringNode, scope: Scope) -> (Type, Subst):
-        return self.context.get_type('String'), {}
+    def visit(self, node: ast.StringNode, scope: Scope) -> Type:
+        return self.context.get_type('String')
 
     @visitor.when(ast.BooleanNode)
-    def visit(self, node: ast.BooleanNode, scope: Scope) -> (Type, Subst):
-        return self.context.get_type('Bool'), {}
+    def visit(self, node: ast.BooleanNode, scope: Scope) -> Type:
+        return self.context.get_type('Bool')
 
     @visitor.when(ast.InstantiateNode)
-    def visit(self, node: ast.InstantiateNode, scope: Scope) -> (Type, Subst):
-        return self.context.get_type(node.lex), {}
+    def visit(self, node: ast.InstantiateNode, scope: Scope) -> Type:
+        return self.context.get_type(node.lex)
 
-    def apply_subst_to_env(self, subst: Subst) -> None:
-        self.apply_subst_to_scope(subst, self.scope)
-        self.apply_subst_to_functions(subst)
-        self.apply_subst_to_attr(subst)
+    def var_bind(self, type1, type2):
+        if type1.name == type2.name:
+            return  # self-reference
+        try:
+            self.types_graph[type1].add(type2)
+        except:
+            self.types_graph[type1] = {type2}
+        try:
+            self.types_graph[type2].add(type1)
+        except:
+            self.types_graph[type2] = {type1}
 
-    def apply_subst_to_scope(self, subst: Subst, scope: Scope) -> None:
-        for var_info in scope.locals:
-            var_info.type = self.apply_subst_to_type(subst, var_info.type)
-        for child in scope.children:
-            self.apply_subst_to_scope(subst, child)
-
-    def apply_subst_to_functions(self, subst: Subst) -> None:
-        for name in self.functions:
-            typex = self.functions[name]
-            self.functions[name] = self.apply_subst_to_type(subst, typex)
-
-    def apply_subst_to_attr(self, subst: Subst) -> None:
-        for name in self.attributes:
-            typex = self.attributes[name]
-            self.attributes[name] = self.apply_subst_to_type(subst, typex)
-
-    def apply_subst_to_type(self, subst: Subst, typex: Type) -> Union[Type, FunctionType, TypeVariable]:
-        if isinstance(typex, TypeVariable):
-            try:
-                return subst[typex.name]
-            except KeyError:
-                return typex
-        elif isinstance(typex, FunctionType):
-            params_types: List[Type] = []
-
-            for param in typex.params_types:
-                params_types.append(self.apply_subst_to_type(subst, param))
-            return_type = self.apply_subst_to_type(subst, typex.return_type)
-
-            return FunctionType(params_types, return_type)
-        elif isinstance(typex, Type):
-            return typex
-        else:
-            raise TypeError()
-
-    def contains(self, typex: Type, name: str) -> bool:
-        if isinstance(typex, TypeVariable):
-            return typex.name == name
-        elif isinstance(typex, FunctionType):
-            for param in typex.params_types:
-                if self.contains(param, name):
-                    return True
-            return self.contains(typex.return_type, name)
-        elif isinstance(typex, Type):
-            return False
-        else:
-            raise TypeError()
-
-    def var_bind(self, name: str, typex: Type) -> Subst:
-        if isinstance(typex, TypeVariable) and typex.name == name:
-            return {}
-        elif self.contains(typex, name):
-            raise Exception('Self-reference')
-        else:
-            return {name: typex}
-
-    def unify(self, type1: Type, type2: Type) -> Subst:
-        if isinstance(type1, TypeVariable):
-            return self.var_bind(type1.name, type2)
-        elif isinstance(type2, TypeVariable):
-            return self.var_bind(type2.name, type1)
+    def unify(self, type1: Type, type2: Type):
+        if isinstance(type1, TypeVariable) or isinstance(type2, TypeVariable):
+            self.var_bind(type1, type2)
         elif isinstance(type1, FunctionType) and isinstance(type2, FunctionType) \
                 and len(type1.params_types) == len(type2.params_types):
-            substitutions: List[Subst] = []
+            self.unify(type1.return_type, type2.return_type)
             for i, j in zip(type1.params_types, type2.params_types):
-                substitutions.append(self.unify(i, j))
-            substitutions.append(self.unify(type1.return_type, type2.return_type))
-            return self.compound_subst(substitutions)
-        elif isinstance(type1, Type) and isinstance(type2, Type):
-            if type1.name == type2.name or type2.conforms_to(type1) or type1.conforms_to(type2):
-                return {}
+                self.unify(i, j)
+        elif type1.name == type2.name or type2.conforms_to(type1) or type1.conforms_to(type2):
+            pass
         else:
             raise Exception('Type mismatch')
 
-    def compound_subst(self, substitutions: List[Subst]) -> Subst:
-        result: Subst = {}
-        for subst in substitutions:
-            result = self.aux_compound_subst(result, subst)
-        return result
-
-    def aux_compound_subst(self, s1: Subst, s2: Subst) -> Subst:
-        result: Subst = {}
-        for name in s1:
-            typex = s1[name]
+    def dfs_inference(self):
+        vertices: List[Type] = []
+        for typex in self.types_graph:
             if isinstance(typex, TypeVariable):
-                result[name] = self.apply_subst_to_type(s2, typex)
+                self.substitutions[typex.name] = ErrorType()
             else:
-                result[name] = typex
-        return {**result, **s2}
+                vertices.append(typex)
+            typex.visited = False
+        for vertex in vertices:
+            self.current_type = vertex
+            if not vertex.visited:
+                self.dfs_visit(vertex)
+
+    def dfs_visit(self, vertex):
+        if isinstance(vertex, TypeVariable):
+            self.substitutions[vertex.name] = self.current_type
+        elif not (vertex.conforms_to(self.current_type) or self.current_type.conforms_to(vertex)):
+            raise SemanticError('Type inference error')
+
+        vertex.visited = True
+        for adj in self.types_graph[vertex]:
+            if not adj.visited:
+                self.dfs_visit(adj)
 
 
