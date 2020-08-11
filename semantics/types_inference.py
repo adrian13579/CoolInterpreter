@@ -60,7 +60,7 @@ class TypeInferencer:
             if typex.parent is not None:
                 return self.aux_get_function(init_type, typex.parent, func_name)
 
-    def get_atribute(self, typex: Type, attr_name) -> Optional[Type]:
+    def get_attribute(self, typex: Type, attr_name) -> Optional[Type]:
         return self.aux_get_attribute(typex, typex, attr_name)
 
     def aux_get_attribute(self, init_type: Type, typex: Type, attr_name) -> Optional[Type]:
@@ -105,7 +105,7 @@ class TypeInferencer:
             self.unify(attr_type, expr_type)
             return attr_type
         else:
-            return self.get_atribute(self.current_type, node.id)
+            return self.get_attribute(self.current_type, node.id)
 
     @visitor.when(ast.MethodDeclarationNode)
     def visit(self, node: ast.MethodDeclarationNode, scope: Scope) -> FunctionType:
@@ -149,7 +149,7 @@ class TypeInferencer:
         expr_type = self.visit(node.expr, scope)
         var_info = scope.find_variable(node.id)
         if var_info is None:  # check if is an attribute
-            var_type = self.get_atribute(self.current_type, node.id)
+            var_type = self.get_attribute(self.current_type, node.id)
         else:
             var_type = var_info.type
         self.unify(var_type, expr_type)
@@ -228,7 +228,7 @@ class TypeInferencer:
         var_info = scope.find_variable(node.lex)
         if var_info is not None:
             return var_info.type
-        var_type = self.get_atribute(self.current_type, node.lex)
+        var_type = self.get_attribute(self.current_type, node.lex)
         if var_type is None:
             return ErrorType()
         return var_type

@@ -28,7 +28,7 @@ class ClassDeclarationNode(DeclarationNode):
 class MethodDeclarationNode(DeclarationNode):
     def __init__(self, idx, params, return_type, body):
         self.id = idx
-        self.params = params
+        self.params: List[VarDeclarationNode] = params
         self.type = return_type
         self.body = body
 

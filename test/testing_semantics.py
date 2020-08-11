@@ -1,4 +1,5 @@
 from cmp.evaluation import evaluate_reverse_parse
+from semantics.types_updater import TypesUpdater
 from serializers import TokenizerHandler, ParserHandler
 import os
 from semantics import TypeChecker, TypeBuilder, TypeCollector, TypeInferencer, Context, Scope
@@ -11,7 +12,7 @@ for i, file in enumerate(os.listdir('semantics_tests')):
     txt = open('semantics_tests/' + file)
     code = txt.read()
 
-    if i == 3:
+    if i == 4:
         print('Test {} started:'.format(i))
         tokens = list(tokenizer(code))
         print('Tokens:')
@@ -27,7 +28,29 @@ for i, file in enumerate(os.listdir('semantics_tests')):
             context = Context()
             scope = Scope()
 
-            TypeCollector(context, errors).visit(ast)
-            TypeBuilder(context, errors).visit(ast)
+            collector = TypeCollector(context, errors)
+            collector.visit(ast)
+            builder = TypeBuilder(context, errors)
+            builder.visit(ast)
+            inferencer = TypeInferencer(context, scope, errors)
+            inferencer.visit(ast, scope)
+            updater = TypesUpdater(inferencer.context,
+                                   inferencer.scope,
+                                   inferencer.functions,
+                                   inferencer.attributes,
+                                   inferencer.substitutions,
+                                   inferencer.errors)
             print(context)
-            TypeInferencer(context, scope, errors).visit(ast, scope)
+            updater.visit(ast, inferencer.scope, 0)
+
+            collector.context = Context()
+            collector.visit(ast)
+            builder.context = collector.context
+            builder.visit(ast)
+            print(builder.context)
+            print('Done')
+
+            # TypeCollector(context, errors).visit(ast)
+            # TypeBuilder(context, errors).visit(ast)
+            # print(context)
+            # TypeInferencer(context, scope, errors).visit(ast, scope)
