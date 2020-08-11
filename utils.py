@@ -329,3 +329,63 @@ class Scope:
 
     def is_local(self, vname) -> bool:
         return any(True for x in self.locals if x.name == vname)
+
+
+class AttrMap:
+    def __init__(self, context: Context):
+        self.context = context
+        self.attributes: Dict[(str, str), Type] = self.collect_attributes(context)
+
+    @staticmethod
+    def collect_attributes(context: Context):
+        attributes: Dict[(str, str), Type] = {}
+        for typex in context.types.values():
+            for attr in typex.attributes:
+                attr_type = TypeVariable() if attr.type.name == 'AUTO_TYPE' else attr.type
+                attributes[typex.name, attr.name] = attr_type
+        return attributes
+
+    def get_attribute(self, typex: Type, attr_name) -> Optional[Type]:
+        return self.aux_get_attribute(typex, typex, attr_name)
+
+    def aux_get_attribute(self, init_type: Type, typex: Type, attr_name) -> Optional[Type]:
+        try:
+            att_type = self.attributes[typex.name, attr_name]
+            return init_type if att_type.name == 'SELF_TYPE' else att_type
+        except KeyError:
+            if typex.parent is not None:
+                return self.aux_get_attribute(init_type, typex.parent, attr_name)
+
+
+class MethodMap:
+    def __init__(self, context: Context):
+        self.context = context
+        self.functions: Dict[(str, str), FunctionType] = self.collect_functions(context)
+
+    @staticmethod
+    def collect_functions(context: Context):
+        functions: Dict[(str, str), FunctionType] = {}
+        for typex in context.types.values():
+            for method in typex.methods:
+                param_types: List[Type] = []
+                for param in method.param_types:
+                    if param.name == 'AUTO_TYPE':
+                        param_types.append(TypeVariable())
+                    else:
+                        param_types.append(param)
+                return_type = TypeVariable() if method.return_type.name == 'AUTO_TYPE' else method.return_type
+                functions[typex.name, method.name] = FunctionType(tuple(param_types), return_type)
+        return functions
+
+    def get_function(self, typex: Type, func_name: str) -> Optional[FunctionType]:
+        return self.aux_get_function(typex, typex, func_name)
+
+    def aux_get_function(self, init_type: Type, typex: Type, func_name: str) -> Optional[FunctionType]:
+        try:
+            func_type = self.functions[typex.name, func_name]
+            params_type = [init_type if param.name == 'SELF_TYPE' else param for param in func_type.params_types]
+            return_type = init_type if func_type.return_type.name == 'SELF_TYPE' else func_type.return_type
+            return FunctionType(tuple(params_type), return_type)
+        except KeyError:
+            if typex.parent is not None:
+                return self.aux_get_function(init_type, typex.parent, func_name)

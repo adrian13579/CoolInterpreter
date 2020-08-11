@@ -103,15 +103,16 @@ class AtomicNode(ExpressionNode):
         self.lex = lex
 
 
-class IsVoidNode(AtomicNode):
+class UnaryNode(ExpressionNode):
+    def __init__(self, expr):
+        self.expr = expr
+
+
+class IsVoidNode(UnaryNode):
     pass
 
 
-class NotNode(AtomicNode):
-    pass
-
-
-class BooleanNode(AtomicNode):
+class NotNode(UnaryNode):
     pass
 
 
@@ -122,6 +123,10 @@ class BinaryNode(ExpressionNode):
 
 
 class ComparerNode(BinaryNode):
+    pass
+
+
+class BooleanNode(AtomicNode):
     pass
 
 

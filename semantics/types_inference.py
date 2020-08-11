@@ -2,7 +2,7 @@ from typing import Dict, List, Optional, Set
 from collections import OrderedDict
 import ast
 from cmp import visitor
-from utils import Context, Type, TypeVariable, FunctionType, Method, ErrorType, Scope, SemanticError
+from utils import Context, Type, TypeVariable, FunctionType, Method, ErrorType, Scope, SemanticError, AttrMap, MethodMap
 import typing
 
 TypeGraph = typing.OrderedDict[Type, Set[Type]]
@@ -17,59 +17,11 @@ class TypeInferencer:
         self.substitutions: Dict[str, Type] = {}
         self.types_graph: TypeGraph = OrderedDict()
 
-        self.functions: Dict[(str, str), FunctionType] = self.collect_functions(context)
-        self.attributes: Dict[(str, str), Type] = self.collect_attributes(context)
+        self.functions: MethodMap = MethodMap(context)
+        self.attributes: AttrMap = AttrMap(context)
 
         self.current_type: Type = None
         self.current_method: Method = None
-
-    @staticmethod
-    def collect_attributes(context: Context):
-        attributes: Dict[(str, str), Type] = {}
-        for typex in context.types.values():
-            for attr in typex.attributes:
-                attr_type = TypeVariable() if attr.type.name == 'AUTO_TYPE' else attr.type
-                attributes[typex.name, attr.name] = attr_type
-        return attributes
-
-    @staticmethod
-    def collect_functions(context: Context):
-        functions: Dict[(str, str), FunctionType] = {}
-        for typex in context.types.values():
-            for method in typex.methods:
-                param_types: List[Type] = []
-                for param in method.param_types:
-                    if param.name == 'AUTO_TYPE':
-                        param_types.append(TypeVariable())
-                    else:
-                        param_types.append(param)
-                return_type = TypeVariable() if method.return_type.name == 'AUTO_TYPE' else method.return_type
-                functions[typex.name, method.name] = FunctionType(tuple(param_types), return_type)
-        return functions
-
-    def get_function(self, typex: Type, func_name: str) -> Optional[FunctionType]:
-        return self.aux_get_function(typex, typex, func_name)
-
-    def aux_get_function(self, init_type: Type, typex: Type, func_name: str) -> Optional[FunctionType]:
-        try:
-            func_type = self.functions[typex.name, func_name]
-            params_type = [init_type if param.name == 'SELF_TYPE' else param for param in func_type.params_types]
-            return_type = init_type if func_type.return_type.name == 'SELF_TYPE' else func_type.return_type
-            return FunctionType(tuple(params_type), return_type)
-        except KeyError:
-            if typex.parent is not None:
-                return self.aux_get_function(init_type, typex.parent, func_name)
-
-    def get_attribute(self, typex: Type, attr_name) -> Optional[Type]:
-        return self.aux_get_attribute(typex, typex, attr_name)
-
-    def aux_get_attribute(self, init_type: Type, typex: Type, attr_name) -> Optional[Type]:
-        try:
-            att_type = self.attributes[typex.name, attr_name]
-            return init_type if att_type.name == 'SELF_TYPE' else att_type
-        except KeyError:
-            if typex.parent is not None:
-                return self.aux_get_attribute(init_type, typex.parent, attr_name)
 
     @visitor.on('node')
     def visit(self, node, scope: Scope):
@@ -100,16 +52,16 @@ class TypeInferencer:
     @visitor.when(ast.AttrDeclarationNode)
     def visit(self, node: ast.AttrDeclarationNode, scope: Scope) -> Type:
         if node.expression is not None:
-            expr_type, subst1 = self.visit(node.expression, scope.create_child())
-            attr_type = self.attributes[node.id]
+            expr_type = self.visit(node.expression, scope.create_child())
+            attr_type = self.attributes.get_attribute(self.current_type, node.id)
             self.unify(attr_type, expr_type)
             return attr_type
         else:
-            return self.get_attribute(self.current_type, node.id)
+            return self.attributes.get_attribute(self.current_type, node.id)
 
     @visitor.when(ast.MethodDeclarationNode)
     def visit(self, node: ast.MethodDeclarationNode, scope: Scope) -> FunctionType:
-        function = self.get_function(self.current_type, self.current_method.name)
+        function = self.functions.get_function(self.current_type, self.current_method.name)
         for param_type, param in zip(function.params_types, node.params):
             scope.define_variable(param.id, param_type)
 
@@ -149,7 +101,7 @@ class TypeInferencer:
         expr_type = self.visit(node.expr, scope)
         var_info = scope.find_variable(node.id)
         if var_info is None:  # check if is an attribute
-            var_type = self.get_attribute(self.current_type, node.id)
+            var_type = self.attributes.get_attribute(self.current_type, node.id)
         else:
             var_type = var_info.type
         self.unify(var_type, expr_type)
@@ -179,7 +131,7 @@ class TypeInferencer:
         if typex.name[0] == 't':
             self.errors.append('Inference error')
         else:
-            function = self.get_function(typex, node.id)
+            function = self.functions.get_function(typex, node.id)
             args_type: List[Type] = []
             for arg in node.args:
                 arg_type = self.visit(arg, scope)
@@ -228,7 +180,7 @@ class TypeInferencer:
         var_info = scope.find_variable(node.lex)
         if var_info is not None:
             return var_info.type
-        var_type = self.get_attribute(self.current_type, node.lex)
+        var_type = self.attributes.get_attribute(self.current_type, node.lex)
         if var_type is None:
             return ErrorType()
         return var_type
@@ -236,14 +188,14 @@ class TypeInferencer:
     @visitor.when(ast.NotNode)
     def visit(self, node: ast.NotNode, scope: Scope) -> Type:
         bool_type = self.context.get_type('Bool')
-        expr_type = self.visit(node.lex, scope)
+        expr_type = self.visit(node.expr, scope)
         self.unify(bool_type, expr_type)
         return bool_type
 
     @visitor.when(ast.IsVoidNode)
     def visit(self, node: ast.IsVoidNode, scope: Scope) -> Type:
         bool_type = self.context.get_type('Bool')
-        _ = self.visit(node.lex, scope)
+        _ = self.visit(node.expr, scope)
         return bool_type
 
     @visitor.when(ast.ConstantNumNode)
@@ -310,5 +262,3 @@ class TypeInferencer:
         for adj in self.types_graph[vertex]:
             if not adj.visited:
                 self.dfs_visit(adj)
-
-

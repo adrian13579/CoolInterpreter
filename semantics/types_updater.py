@@ -81,7 +81,7 @@ class TypesUpdater:
     @visitor.when(ast.MethodDeclarationNode)
     def visit(self, node: ast.MethodDeclarationNode, scope: Scope, index: int) -> int:
         function = self.get_function(self.current_type, node.id)
-        for param, param_type in zip(node.params,function.params_types):
+        for param, param_type in zip(node.params, function.params_types):
             if param.typex == 'AUTO_TYPE':
                 param.typex = self.subst[param_type.name].name
 
@@ -153,32 +153,11 @@ class TypesUpdater:
         index = self.visit(node.right, scope, index)
         return index
 
-    @visitor.when(ast.NotNode)
+    @visitor.when(ast.UnaryNode)
     def visit(self, node: ast.NotNode, scope: Scope, index: int) -> int:
-        index = self.visit(node.lex, scope, index)
+        index = self.visit(node.expr, scope, index)
         return index
 
-    @visitor.when(ast.IsVoidNode)
-    def visit(self, node: ast.IsVoidNode, scope: Scope, index: int) -> int:
-        index = self.visit(node.lex, scope, index)
+    @visitor.when(ast.AtomicNode)
+    def visit(self, node: ast.AtomicNode, scope: Scope, index: int) -> int:
         return index
-
-    @visitor.when(ast.ConstantNumNode)
-    def visit(self, node: ast.ConstantNumNode, scope: Scope, index: int) -> int:
-        return index
-
-    @visitor.when(ast.StringNode)
-    def visit(self, node: ast.StringNode, scope: Scope, index: int) -> int:
-        return index
-
-    @visitor.when(ast.BooleanNode)
-    def visit(self, node: ast.BooleanNode, scope: Scope, index: int) -> int:
-        return index
-
-    @visitor.when(ast.InstantiateNode)
-    def visit(self, node: ast.InstantiateNode, scope: Scope, index: int) -> int:
-        return index
-
-
-
-

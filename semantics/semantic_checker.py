@@ -222,6 +222,18 @@ class TypeChecker:
             self.errors.append(f'Type {node.lex} not defined')
             return ErrorType()
 
+    @visitor.when(ast.IsVoidNode)
+    def visit(self, node: ast.IsVoidNode, scope: Scope):
+        self.visit(node.expr, scope)
+        return self.context.get_type('Bool')
+
+    @visitor.when(ast.NotNode)
+    def visit(self, node: ast.NotNode, scope: Scope):
+        exrp_type = self.visit(node.expr, scope)
+        if exrp_type != self.context.get_type('Bool'):
+            self.errors.append(INVALID_OPERATION % (exrp_type.name, 'Bool'))
+        return self.context.get_type('Bool')
+
     @visitor.when(ast.ConstantNumNode)
     def visit(self, node: ast.ConstantNumNode, scope: Scope):
         return self.context.get_type('Int')
@@ -233,11 +245,3 @@ class TypeChecker:
     @visitor.when(ast.StringNode)
     def visit(self, node: ast.StringNode, scope: Scope):
         return self.context.get_type('String')
-
-    @visitor.when(ast.IsVoidNode)
-    def visit(self, node: ast.IsVoidNode, scope: Scope):
-        return self.context.get_type('Bool')
-
-    @visitor.when(ast.NotNode)
-    def visit(self, node: ast.NotNode, scope: Scope):
-        return self.context.get_type('Bool')

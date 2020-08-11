@@ -49,8 +49,3 @@ for i, file in enumerate(os.listdir('semantics_tests')):
             builder.visit(ast)
             print(builder.context)
             print('Done')
-
-            # TypeCollector(context, errors).visit(ast)
-            # TypeBuilder(context, errors).visit(ast)
-            # print(context)
-            # TypeInferencer(context, scope, errors).visit(ast, scope)

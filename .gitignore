@@ -10,8 +10,8 @@ cmp/__pycache__/
 cmp/lexer/__pycache__/
 cmp/parsers/__pycache__/
 cool-manual.pdf
-test/code1.py
-test/qwq.py
+tests/code1.py
+tests/qwq.py
 
 cmp/tools/.ipynb_checkpoints/
 cmp/tools/__init__.py
