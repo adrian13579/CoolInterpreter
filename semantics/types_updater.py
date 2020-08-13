@@ -19,32 +19,7 @@ class TypesUpdater:
         self.attributes = attributes
         self.subst = subst
         self.errors = errors
-
         self.current_type: Type = None
-
-    def get_function(self, typex: Type, func_name: str) -> Optional[FunctionType]:
-        return self.aux_get_function(typex, typex, func_name)
-
-    def aux_get_function(self, init_type: Type, typex: Type, func_name: str) -> Optional[FunctionType]:
-        try:
-            func_type = self.functions[typex.name, func_name]
-            params_type = [init_type if param.name == 'SELF_TYPE' else param for param in func_type.params_types]
-            return_type = init_type if func_type.return_type.name == 'SELF_TYPE' else func_type.return_type
-            return FunctionType(tuple(params_type), return_type)
-        except KeyError:
-            if typex.parent is not None:
-                return self.aux_get_function(init_type, typex.parent, func_name)
-
-    def get_attribute(self, typex: Type, attr_name) -> Optional[Type]:
-        return self.aux_get_attribute(typex, typex, attr_name)
-
-    def aux_get_attribute(self, init_type: Type, typex: Type, attr_name) -> Optional[Type]:
-        try:
-            att_type = self.attributes[typex.name, attr_name]
-            return init_type if att_type.name == 'SELF_TYPE' else att_type
-        except KeyError:
-            if typex.parent is not None:
-                return self.aux_get_attribute(init_type, typex.parent, attr_name)
 
     @visitor.on('node')
     def visit(self, node, scope, index):
@@ -71,7 +46,7 @@ class TypesUpdater:
     @visitor.when(ast.AttrDeclarationNode)
     def visit(self, node: ast.AttrDeclarationNode, scope: Scope, index: int) -> int:
         if node.typex == 'AUTO_TYPE':
-            att_type = self.get_attribute(self.current_type, node.id)
+            att_type = self.attributes.get_attribute(self.current_type, node.id)
             node.typex = self.subst[att_type.name].name
 
         if node.expression is not None:
@@ -80,7 +55,7 @@ class TypesUpdater:
 
     @visitor.when(ast.MethodDeclarationNode)
     def visit(self, node: ast.MethodDeclarationNode, scope: Scope, index: int) -> int:
-        function = self.get_function(self.current_type, node.id)
+        function = self.functions.get_function(self.current_type, node.id)
         for param, param_type in zip(node.params, function.params_types):
             if param.typex == 'AUTO_TYPE':
                 param.typex = self.subst[param_type.name].name
@@ -133,7 +108,6 @@ class TypesUpdater:
     @visitor.when(ast.LoopNode)
     def visit(self, node: ast.LoopNode, scope: Scope, index: int) -> int:
         index = self.visit(node.condition, scope, index)
-        i = 0
         i = self.visit(node.body, scope.children[index], 0)
         return index + 1
 
@@ -141,7 +115,10 @@ class TypesUpdater:
     def visit(self, node: ast.VarDeclarationNode, scope: Scope, index: int) -> int:
         if node.typex == 'AUTO_TYPE':
             var_info = scope.find_variable(node.id)
-            node.typex = self.subst[var_info.type.name].name
+            if isinstance(var_info.type, TypeVariable):
+                node.typex = self.subst[var_info.type.name].name
+            else:
+                node.typex = var_info.type.name
 
         if node.expr is not None:
             index = self.visit(node.expr, scope, index)

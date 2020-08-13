@@ -1,4 +1,4 @@
-from typing import Dict, List, Optional, Set
+from typing import Dict, List, Set
 from collections import OrderedDict
 import ast
 from cmp import visitor
@@ -32,9 +32,7 @@ class TypeInferencer:
         for class_decl in node.declarations:
             self.current_type = self.context.get_type(class_decl.id)
             self.visit(class_decl, scope.create_child())
-
         self.dfs_inference()
-        print('Hello World!')
 
     @visitor.when(ast.ClassDeclarationNode)
     def visit(self, node: ast.ClassDeclarationNode, scope: Scope) -> None:
@@ -70,7 +68,7 @@ class TypeInferencer:
         return function
 
     @visitor.when(ast.ConditionalNode)
-    def visit(self, node: ast.ConditionalNode, scope: Scope):
+    def visit(self, node: ast.ConditionalNode, scope: Scope) -> Type:
         bool_type = self.context.get_type('Bool')
         cond_type = self.visit(node.condition, scope)
         self.unify(bool_type, cond_type)
@@ -79,7 +77,7 @@ class TypeInferencer:
         return self.context.get_type('Object')
 
     @visitor.when(ast.CaseNode)
-    def visit(self, node: ast.CaseNode, scope: Scope):
+    def visit(self, node: ast.CaseNode, scope: Scope) -> Type:
         _ = self.visit(node.case_expr, scope)
         types: List[Type] = []
         for option in node.options:
@@ -97,7 +95,7 @@ class TypeInferencer:
         return body_type
 
     @visitor.when(ast.AssignNode)
-    def visit(self, node: ast.AssignNode, scope: Scope):
+    def visit(self, node: ast.AssignNode, scope: Scope) -> Type:
         expr_type = self.visit(node.expr, scope)
         var_info = scope.find_variable(node.id)
         if var_info is None:  # check if is an attribute
@@ -108,7 +106,7 @@ class TypeInferencer:
         return var_type
 
     @visitor.when(ast.BlocksNode)
-    def visit(self, node: ast.BlocksNode, scope: Scope):
+    def visit(self, node: ast.BlocksNode, scope: Scope) -> Type:
         child_scope = scope.create_child()
         expr_type = self.context.get_type('Void')
         for expr in node.expr_list:
@@ -116,7 +114,7 @@ class TypeInferencer:
         return expr_type
 
     @visitor.when(ast.MethodCallNode)
-    def visit(self, node: ast.MethodCallNode, scope: Scope):
+    def visit(self, node: ast.MethodCallNode, scope: Scope) -> Type:
         if node.expr is None:
             obj_type = self.current_type
         else:
@@ -128,7 +126,7 @@ class TypeInferencer:
             typex = self.context.get_type(node.type)
 
         # checks if the type is known
-        if typex.name[0] == 't':
+        if typex.name[0] == 'T':
             self.errors.append('Inference error')
         else:
             function = self.functions.get_function(typex, node.id)
@@ -140,7 +138,7 @@ class TypeInferencer:
             return function.return_type
 
     @visitor.when(ast.LoopNode)
-    def visit(self, node: ast.LoopNode, scope: Scope):
+    def visit(self, node: ast.LoopNode, scope: Scope) -> Type:
         cond_type = self.visit(node.condition, scope)
         body_type = self.visit(node.body, scope.create_child())
         self.unify(self.context.get_type('Bool'), cond_type)
@@ -149,8 +147,6 @@ class TypeInferencer:
     @visitor.when(ast.VarDeclarationNode)
     def visit(self, node: ast.VarDeclarationNode, scope: Scope) -> Type:
         var_type = self.context.get_type(node.typex)
-        if var_type.name == 'AUTO_TYPE':
-            var_type = TypeVariable()
         if node.expr is not None:
             var_type = self.visit(node.expr, scope)
         scope.define_variable(node.id, var_type)
@@ -237,7 +233,7 @@ class TypeInferencer:
         elif type1.name == type2.name or type2.conforms_to(type1) or type1.conforms_to(type2):
             pass
         else:
-            raise Exception('Type mismatch')
+            raise Exception(f'Types mismatch {type1.name} {type2.name}')
 
     def dfs_inference(self):
         vertices: List[Type] = []

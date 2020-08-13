@@ -1,8 +1,8 @@
 class Main inherits IO{
-    a : Ackermann ;
-    main(): SELF_TYPE {{
+    a :  AUTO_TYPE ;
+    main(): AUTO_TYPE {{
         a <- new Ackermann;
-        out_int(a.ackermann(1,3));
+        a.ackermann(1,3);
         }
     };
 };

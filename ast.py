@@ -14,15 +14,18 @@ class DeclarationNode(Node):
     pass
 
 
-class ExpressionNode(Node):
-    pass
-
-
 class ClassDeclarationNode(DeclarationNode):
     def __init__(self, idx, features, parent=None):
         self.id = idx
         self.parent = parent
         self.features = features
+
+
+class AttrDeclarationNode(DeclarationNode):
+    def __init__(self, idx, typex, expression=None):
+        self.id = idx
+        self.typex = typex
+        self.expression = expression
 
 
 class MethodDeclarationNode(DeclarationNode):
@@ -33,11 +36,8 @@ class MethodDeclarationNode(DeclarationNode):
         self.body = body
 
 
-class AttrDeclarationNode(DeclarationNode):
-    def __init__(self, idx, typex, expression=None):
-        self.id = idx
-        self.typex = typex
-        self.expression = expression
+class ExpressionNode(Node):
+    pass
 
 
 class VarDeclarationNode(ExpressionNode):
@@ -98,11 +98,6 @@ class BlocksNode(ExpressionNode):
         self.expr_list = expr_list
 
 
-class AtomicNode(ExpressionNode):
-    def __init__(self, lex):
-        self.lex = lex
-
-
 class UnaryNode(ExpressionNode):
     def __init__(self, expr):
         self.expr = expr
@@ -126,27 +121,19 @@ class ComparerNode(BinaryNode):
     pass
 
 
-class BooleanNode(AtomicNode):
+class LessNode(ComparerNode):
+    pass
+
+
+class LessOrEqualNode(ComparerNode):
+    pass
+
+
+class EqualsNode(ComparerNode):
     pass
 
 
 class ArithmeticNode(BinaryNode):
-    pass
-
-
-class ConstantNumNode(AtomicNode):
-    pass
-
-
-class StringNode(AtomicNode):
-    pass
-
-
-class VariableNode(AtomicNode):
-    pass
-
-
-class InstantiateNode(AtomicNode):
     pass
 
 
@@ -166,15 +153,28 @@ class DivNode(ArithmeticNode):
     pass
 
 
-class LessNode(ComparerNode):
+class AtomicNode(ExpressionNode):
+    def __init__(self, lex):
+        self.lex = lex
+
+
+class BooleanNode(AtomicNode):
     pass
 
 
-class LessOrEqualNode(ComparerNode):
+class ConstantNumNode(AtomicNode):
     pass
 
 
-class EqualsNode(ComparerNode):
+class StringNode(AtomicNode):
+    pass
+
+
+class VariableNode(AtomicNode):
+    pass
+
+
+class InstantiateNode(AtomicNode):
     pass
 
 # TODO:  ~ node

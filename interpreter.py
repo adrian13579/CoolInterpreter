@@ -14,7 +14,7 @@ def type_name(obj: CoolObject, x: CoolObject, context: Context) -> CoolObject:
     return CoolObject(context.get_type('String'), x.type.name)
 
 
-def copy(obj: CoolObject, context: Context) -> CoolObject:
+def copy(obj: CoolObject) -> CoolObject:
     copy_obj = CoolObject(obj.type, obj.value if obj.type.name in ('Int', 'String', 'Bool') else None)
     copy_obj.atributes = obj.atributes
     return copy_obj
@@ -205,11 +205,11 @@ class Interpreter:
 
     @visitor.when(ast.NotNode)
     def visit(self, node: ast.NotNode, scope: Scope) -> CoolObject:
-        return CoolObject(self.context.get_type('Bool'), not self.visit(node.lex))
+        return CoolObject(self.context.get_type('Bool'), not self.visit(node.expr))
 
     @visitor.when(ast.IsVoidNode)
     def visit(self, node: ast.IsVoidNode, scope: Scope) -> CoolObject:
-        return CoolObject(self.context.get_type('Bool'), isinstance(self.visit(node.lex, scope), VoidObject))
+        return CoolObject(self.context.get_type('Bool'), isinstance(self.visit(node.expr, scope), VoidObject))
 
     @visitor.when(ast.ConstantNumNode)
     def visit(self, node: ast.ConstantNumNode, scope: Scope) -> CoolObject:

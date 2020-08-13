@@ -30,7 +30,7 @@ class TypeBuilder:
 
         try:
             main: Type = self.context.get_type('Main')
-            if main.parent is not self.context.get_type('Object'):
+            if main.parent not in (self.context.get_type('Object'), self.context.get_type('IO')):
                 self.errors.append('Class Main cannot inherit from another class')
             try:
                 method: Method = main.get_method('main')
