@@ -51,6 +51,6 @@ if __name__ == '__main__':
     t.create()
     t.save("/mnt/69F79531507E7A36/CS/This year's stuff/Compilacion/Proyectos/CoolInterpreter/tools/lexer")
 
-    p = ParserHandler()
-    p.create()
-    p.save("/mnt/69F79531507E7A36/CS/This year's stuff/Compilacion/Proyectos/CoolInterpreter/tools/parser")
+    # p = ParserHandler()
+    # p.create()
+    # p.save("/mnt/69F79531507E7A36/CS/This year's stuff/Compilacion/Proyectos/CoolInterpreter/tools/parser")

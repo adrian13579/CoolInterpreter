@@ -8,6 +8,7 @@ import typing
 TypeGraph = typing.OrderedDict[Type, Set[Type]]
 
 
+# TODO: Attributes error
 class TypeInferencer:
     def __init__(self, context: Context, scope: Scope, errors: List[str]):
         self.errors = errors

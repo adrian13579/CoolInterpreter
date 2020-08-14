@@ -15,9 +15,9 @@ class Lexer:
         for n, (token_type, regex) in enumerate(table):
             NFA = Regex.build_automaton(regex)
             automaton, states = State.from_nfa(NFA, get_states=True)
-            for state in states:
+            for state in automaton:
                 if state.final:
-                    state.tag = (n, token_type)
+                    state.tag = [(n, token_type)]
             regexs.append(automaton)
 
         return regexs
@@ -33,32 +33,37 @@ class Lexer:
         state = self.automaton
         final = state if state.final else None
         final_lex = lex = ''
-
+        token_type = None
+        priority = 500000
         for symbol in string:
             try:
                 state = state.get(symbol)
                 lex += symbol
                 if state.final:
-                    final = state
-                    final_lex = lex
+                    if state.tag is not None:
+                        for tag in state.tag:
+                            if tag[0] <= priority:
+                                priority, token_type = tag
+                                final_lex = lex
             except KeyError:
                 break
 
-        return final, final_lex
+        return token_type, final_lex
 
-    def _tokenize(self, text):
-        states = None
-        lex = None
+    def _tokenize(self, input_text):
+        text = ""
+        for i in input_text:
+            if i == '\n':
+                text += '\\n'
+            elif i == '\t':
+                text += '\\t'
+            elif i == '\'':
+                pass
+            else:
+                text += i
 
         while len(text) > 0:
-            states, lex = self._walk(text)
-            if None in (states, text):
-                raise Exception('Parsing Error')
-            priority = 30000
-            token_type = None
-            for state in states.state:
-                if state.final and state.tag[0] <= priority:
-                    priority, token_type = state.tag
+            token_type, lex = self._walk(text)
             yield lex, token_type
             text = text[len(lex):]
 

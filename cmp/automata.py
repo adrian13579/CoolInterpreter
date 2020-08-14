@@ -69,6 +69,7 @@ class State:
 
                 if closure not in closures:
                     new_state = State(tuple(closure), any(s.final for s in closure), formatter)
+                    new_state.tag = [state.tag[0] for state in closure if state.tag is not None]
                     closures.append(closure)
                     states.append(new_state)
                     pending.append(new_state)

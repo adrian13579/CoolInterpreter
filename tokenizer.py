@@ -47,9 +47,9 @@ class CoolTokenizer:
             (string, stringx),
             (true, 'true'),
             (false, 'false'),
-            ('new_line', '\n'),
+            ('new_line', '\\n'),
             ('space', '« »∀'),
-            ('tab', '\t'),
+            ('tab', '\\t'),
         ], G.EOF)
 
     def __call__(self, text: str) -> List[Token]:
@@ -82,13 +82,20 @@ class CoolTokenizer:
         return ret_token
 
 
-'« » ∀ §'
+'''
+Regex operators:
+« equals ( 
+» equals )
+∀ equals *
+§ equals |
+'''
+
 alf = 'a§b§c§d§f§e§g§h§i§j§k§l§m§n§o§p§q§r§s§t§u§v§w§x§y§z§A§B§C§D§E§F§G§H§I§J§K§L§M§N§O§P§Q§R§S§T§U§V§W§X§Y§Z'
+symbol  = '`§~§!§@§#§$§%§^§&§*§(§)§-§_§|§=§+§{§}§[§]§;§:§<§>§,§.§?§/§\\'
 num = '1§2§3§4§5§6§7§8§9§0'
 integer = '««1§2§3§4§5§6§7§8§9»«0§1§2§3§4§5§6§7§8§9»∀»§«0»'
-stringx = f'"«{alf}§.§;§:§(§)§.§,§:§;§ §_§{num}§\§n§b§t§f»∀"'
-identifier = f'«_»∀«{alf}»«{alf}§_§{num}»∀'
-comment_dashes = f'«--«{alf}§_§ §{num}»∀\n»'
-comment_star = f'«(*«{alf}§_§ §\n§{num}»∀*)»'
 
-# TODO  Fix Problem: Tokenizer does not recognize comment of the form (*...*) and --
+stringx = f'"«{alf}§ §{symbol}§{num}»∀"'
+identifier = f'«_»∀«{alf}»«{alf}§_§{num}»∀'
+comment_dashes = f'«--«{alf}§{symbol}§ §{num}»∀\\n»'
+comment_star = f"«(*«{alf}§{symbol}§ §{num}»∀*)»"
