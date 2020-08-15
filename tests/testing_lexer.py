@@ -445,5 +445,9 @@ class Main inherits CellularAutomaton {
 
 
 '''
-for token in tokenizer(text4):
+text5 = '''
+classi
+ size_of_board(initial : String) : Int {
+ '''
+for token in tokenizer(text5):
     print(token.lex, token.token_type, token.col, token.row)

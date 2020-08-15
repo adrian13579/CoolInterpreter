@@ -7,6 +7,7 @@ class CoolTokenizer:
     def __init__(self):
         self.lexer = Lexer([
             ('comment', f'{comment_dashes}§{comment_star}'),
+            (idx, identifier),
             (classx, 'class'),
             (inherits, 'inherits'),
             (let, 'let'),
@@ -42,7 +43,6 @@ class CoolTokenizer:
             (inx, 'in'),
             (notx, 'not'),
             (at, '@'),
-            (idx, identifier),
             (intx, integer),
             (string, stringx),
             (true, 'true'),

@@ -16,7 +16,7 @@ for i, file in enumerate(os.listdir('runtime_tests')):
         print('Test {} started:'.format(i))
         tokens = list(tokenizer(code))
         print('Tokens:')
-        print(tokens, '\n')
+        for token in tokens: print(token)
         parse, operations = parser(tokens, get_shift_reduce=True)
         print('Parsing:')
         for j in parse: print(j)

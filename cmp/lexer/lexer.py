@@ -1,6 +1,7 @@
 from cmp.automata import State
 from cmp.utils import Token
 from cmp.lexer.regex import Regex
+from grammar import idx
 
 
 class Lexer:
@@ -42,7 +43,11 @@ class Lexer:
                 if state.final:
                     if state.tag is not None:
                         for tag in state.tag:
-                            if tag[0] <= priority:
+                            if lex == str(tag[1]) and tag[1] != idx:
+                                priority, token_type = tag
+                                final_lex = lex
+                                break
+                            elif tag[0] <= priority:
                                 priority, token_type = tag
                                 final_lex = lex
             except KeyError:

@@ -78,13 +78,15 @@ factor %= atom, lambda h, s: s[1]
 factor %= opar + expr + cpar, lambda h, s: s[2]
 factor %= new + idx, lambda h, s: InstantiateNode(s[2])
 
+atom %= false, lambda h, s: BooleanNode(s[1])
+atom %= true, lambda h, s: BooleanNode(s[1])
 atom %= intx, lambda h, s: ConstantNumNode(s[1])
+atom %= string, lambda h, s: StringNode(s[1])
 atom %= idx, lambda h, s: VariableNode(s[1])
 atom %= factor + at + idx + dot + idx + opar + arg_list + cpar, lambda h, s: MethodCallNode(expr=s[1], typex=s[3],
                                                                                             idx=s[5], args=s[7])
 atom %= factor + dot + idx + opar + arg_list + cpar, lambda h, s: MethodCallNode(expr=s[1], idx=s[3], args=s[5])
 atom %= idx + opar + arg_list + cpar, lambda h, s: MethodCallNode(idx=s[1], args=s[3])
-atom %= string, lambda h, s: StringNode(s[1])
 
 arg_list %= expr, lambda h, s: [s[1]]
 arg_list %= expr + comma + arg_list, lambda h, s: [s[1]] + s[3]
@@ -100,3 +102,5 @@ case_list %= case_single + case_list, lambda h, s: [s[1]] + s[2]
 case_list %= case_single, lambda h, s: [s[1]]
 
 case_single %= idx + colon + idx + case_assigment + expr + semi, lambda h, s: CaseOptionNode(s[1], s[3], s[5])
+
+# TODO: Allow adding let and if expressions without ( )
