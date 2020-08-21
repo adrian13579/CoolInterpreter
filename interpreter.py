@@ -121,7 +121,7 @@ class Interpreter:
         child_scope = scope.create_child()
         for var in node.var_decl_list:
             var_type = self.context.get_type(var.typex)
-            var_object = self.visit(var.expr, child_scope)
+            var_object = CoolObject(var_type) if var.expr is None else self.visit(var.expr, child_scope)
             child_scope.define_variable(var.id, var_type, var_object)
         return self.visit(node.in_expr, child_scope)
 
@@ -166,7 +166,7 @@ class Interpreter:
             return self.builtin_functions['IO', node.id](*args)
 
         new_scope = Scope()
-        new_scope.define_variable('self', expr)
+        new_scope.define_variable('self', expr.type, expr)
         for param_name, param_type, arg in zip(method.param_names, method.param_types, node.args):
             new_scope.define_variable(vname=param_name, vtype=param_type, value=self.visit(arg, scope))
 
@@ -251,7 +251,7 @@ class Interpreter:
 
     @visitor.when(ast.DivNode)
     def operate(self, node, left, right):
-        return CoolObject(self.context.get_type('Int'), left / right)
+        return CoolObject(self.context.get_type('Int'), left // right)
 
     @visitor.when(ast.EqualsNode)
     def operate(self, node, left, right):

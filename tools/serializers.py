@@ -1,6 +1,7 @@
+import os
+
 import dill
 from cmp.parsers.lr1_parser import LR1Parser
-# from cmp.tools.parsing import LR1Parser
 from tokenizer import CoolTokenizer, G
 
 
@@ -47,10 +48,11 @@ class ParserHandler:
 
 
 if __name__ == '__main__':
+    a = os.getcwd()
     t = TokenizerHandler()
     t.create()
-    t.save("/mnt/69F79531507E7A36/CS/This year's stuff/Compilacion/Proyectos/CoolInterpreter/tools/lexer")
+    t.save(os.getcwd() + '/tools/lexer')
 
-    p = ParserHandler()
-    p.create()
-    p.save("/mnt/69F79531507E7A36/CS/This year's stuff/Compilacion/Proyectos/CoolInterpreter/tools/parser")
+    # p = ParserHandler()
+    # p.create()
+    # p.save(os.getcwd() + '/tools/parser')

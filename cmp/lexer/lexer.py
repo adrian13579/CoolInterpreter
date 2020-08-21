@@ -55,18 +55,7 @@ class Lexer:
 
         return token_type, final_lex
 
-    def _tokenize(self, input_text):
-        text = ""
-        for i in input_text:
-            if i == '\n':
-                text += '\\n'
-            elif i == '\t':
-                text += '\\t'
-            elif i == '\'':
-                pass
-            else:
-                text += i
-
+    def _tokenize(self, text):
         while len(text) > 0:
             token_type, lex = self._walk(text)
             yield lex, token_type

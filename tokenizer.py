@@ -52,7 +52,18 @@ class CoolTokenizer:
             ('tab', '\\t'),
         ], G.EOF)
 
-    def __call__(self, text: str) -> List[Token]:
+    def __call__(self, input_text: str) -> List[Token]:
+        text = ""
+        for i in input_text:
+            if i == '\n':
+                text += '\\n'
+            elif i == '\t':
+                text += '\\t'
+            elif i == '\'':
+                pass
+            else:
+                text += i
+
         tokens: List[Token] = self.lexer(text)
         col = 1
         row = 1
@@ -75,6 +86,11 @@ class CoolTokenizer:
                     index = token.lex.rfind('\n')
                     col += token.lex[index:].count(' ')
             else:
+                if token.token_type.Name == string.Name:
+                    new_lex = token.lex.replace('"', '')
+                    new_lex = new_lex.replace('\\n', '\n')
+                    new_lex = new_lex.replace('\\t', '\t')
+                    token.lex = new_lex
                 token.col = col
                 token.row = row
                 col += len(token.lex)
@@ -91,7 +107,7 @@ Regex operators:
 '''
 
 alf = 'a§b§c§d§f§e§g§h§i§j§k§l§m§n§o§p§q§r§s§t§u§v§w§x§y§z§A§B§C§D§E§F§G§H§I§J§K§L§M§N§O§P§Q§R§S§T§U§V§W§X§Y§Z'
-symbol  = '`§~§!§@§#§$§%§^§&§*§(§)§-§_§|§=§+§{§}§[§]§;§:§<§>§,§.§?§/§\\'
+symbol = '`§~§!§@§#§$§%§^§&§*§(§)§-§_§|§=§+§{§}§[§]§;§:§<§>§,§.§?§/§\\'
 num = '1§2§3§4§5§6§7§8§9§0'
 integer = '««1§2§3§4§5§6§7§8§9»«0§1§2§3§4§5§6§7§8§9»∀»§«0»'
 

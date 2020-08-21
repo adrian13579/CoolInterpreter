@@ -1,10 +1,10 @@
 from cmp.evaluation import evaluate_reverse_parse
 from interpreter import Interpreter
-from serializers import TokenizerHandler, ParserHandler
+from tools.serializers import TokenizerHandler, ParserHandler
 import os
-from semantics import TypeChecker, TypeBuilder, TypeCollector, TypeInferencer, Context, Scope
+from semantics import TypeBuilder, TypeCollector, Context, Scope
 
-path = "/mnt/69F79531507E7A36/CS/This year's stuff/Compilacion/Proyectos/CoolInterpreter/tools"
+path = os.getcwd().replace('tests', '') + 'tools'
 tokenizer = TokenizerHandler.load(path + '/lexer')
 parser = ParserHandler.load(path + '/parser')
 
@@ -12,9 +12,9 @@ for i, file in enumerate(os.listdir('runtime_tests')):
     txt = open('runtime_tests/' + file)
     code = txt.read()
 
-    if i == 3:
+    if i == 7:
         print('Test {} started:'.format(i))
-        tokens = list(tokenizer(code))
+        tokens = list(tokenizer(text5))
         print('Tokens:')
         for token in tokens: print(token)
         parse, operations = parser(tokens, get_shift_reduce=True)
@@ -32,4 +32,3 @@ for i, file in enumerate(os.listdir('runtime_tests')):
             TypeBuilder(context, errors).visit(ast)
             print(context)
             Interpreter(context).visit(ast, Scope())
-            print(context.get_type('Main').get_method('main').expression)

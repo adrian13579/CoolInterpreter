@@ -2,9 +2,9 @@ import os
 
 from cmp.evaluation import evaluate_reverse_parse
 from interpreter import Interpreter
-from semantics import TypeCollector, TypeBuilder, TypeInferencer
+from semantics import TypeCollector, TypeBuilder, TypeInferencer, TypeChecker
 from semantics.types_updater import TypesUpdater
-from serializers import TokenizerHandler, ParserHandler
+from tools.serializers import TokenizerHandler, ParserHandler
 from utils import Context, Scope
 
 path = os.getcwd() + '/tools'
@@ -42,6 +42,8 @@ def run_pipeline(args):
         collector.visit(ast)
         builder.context = collector.context
         builder.visit(ast)
+        type_checker = TypeChecker(builder.context, errors)
+        type_checker.visit(ast)
         print(builder.context)
         if errors:
             print(errors)

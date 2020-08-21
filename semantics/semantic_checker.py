@@ -99,8 +99,19 @@ class TypeChecker:
 
     @visitor.when(ast.MethodCallNode)
     def visit(self, node: ast.MethodCallNode, scope: Scope):
+        object_type = self.current_type
+        if node.expr is not None:
+            object_type = self.visit(node.expr, scope)
+            if node.type is not None:
+                node_type = self.context.get_type(node.type)
+                if object_type.conforms_to(node_type):
+                    object_type = node_type
+                else:
+                    self.errors.append(f'Invalid method call')
+        elif node.type is not None:
+            self.errors.append('Invalid method call')
         try:
-            method: Method = self.current_type.get_method(node.id)
+            method: Method = object_type.get_method(node.id)
             return_type: Type = method.return_type
             if len(method.param_types) != len(node.args):
                 self.errors.append(f'Unexpected number of arguments in method {self.current_type.name}.{node.id}')
@@ -197,7 +208,7 @@ class TypeChecker:
         right_expr_type: Type = self.visit(node.right, scope)
         bool_type = self.context.get_type('Bool')
 
-        if left_expr_type != bool_type or right_expr_type != bool_type:
+        if left_expr_type != right_expr_type:
             self.errors.append(INVALID_OPERATION % (left_expr_type.name, right_expr_type.name))
         return bool_type
 

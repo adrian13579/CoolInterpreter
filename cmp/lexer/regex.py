@@ -117,6 +117,13 @@ def regex_tokenizer(text, G, skip_whitespaces=True):
 
 
 class Regex:
+    """
+    Regex operators:
+    « equals (
+    » equals )
+    ∀ equals *
+    § equals |
+    """
     def __init__(self, regex: str):
         self.regex: str = regex
         self.automaton: DFA = self.build_automaton(self.regex)

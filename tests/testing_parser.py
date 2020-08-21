@@ -1,7 +1,8 @@
 from cmp.evaluation import evaluate_reverse_parse
-from serializers import TokenizerHandler, ParserHandler
+from tools.serializers import TokenizerHandler, ParserHandler
+import os
 
-path = "/mnt/69F79531507E7A36/CS/This year's stuff/Compilacion/Proyectos/CoolInterpreter/tools"
+path = os.getcwd().replace('tests', '') + 'tools'
 tokenizer = TokenizerHandler.load(path + '/lexer')
 parser = ParserHandler.load(path + '/parser')
 code = '''

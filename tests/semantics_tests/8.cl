@@ -1,5 +1,5 @@
 class Main inherits IO{
-    a :  AUTO_TYPE ;
+    a :  Ackermann ;
     main(): AUTO_TYPE {{
         a <- new Ackermann;
         a.ackermann(1,3);
