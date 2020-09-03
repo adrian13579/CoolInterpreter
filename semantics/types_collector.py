@@ -2,7 +2,7 @@ from typing import List
 
 from ast import ProgramNode, ClassDeclarationNode
 from cmp import visitor
-from utils import Context, ErrorType, Type, VoidType
+from semantics.utils import Context, ErrorType, Type, VoidType
 
 
 class TypeCollector(object):

@@ -1,7 +1,7 @@
-from typing import List
-from ast import ProgramNode, ClassDeclarationNode, MethodDeclarationNode, VarDeclarationNode, AttrDeclarationNode
+from typing import List, Dict
 from cmp import visitor
-from utils import Type, SemanticError, ErrorType, Context, Method
+import ast
+from semantics.utils import Type, SemanticError, ErrorType, Context, Method
 
 
 class TypeBuilder:
@@ -19,52 +19,80 @@ class TypeBuilder:
             self.context.get_type('SELF_TYPE'),
         )
 
+        self.__hierarchy_tree: Dict[str, List[str]] = {}
+        self.__stack = []
+        self.__visited = {}
+
+    def __add_edge(self, node, parent):
+        try:
+            self.__hierarchy_tree[parent].append(node)
+        except KeyError:
+            self.__hierarchy_tree[parent] = [node]
+
+    def __cyclic_references(self):
+        for node in self.__hierarchy_tree:
+            try:
+                self.__visited[node]
+            except KeyError:
+                self.__dfs_visit(node)
+
+    def __dfs_visit(self, node):
+        for adj in self.__hierarchy_tree[node]:
+            try:
+                self.__visited[adj]
+            except KeyError:
+                self.__visited[adj] = True
+                self.__dfs_visit(adj)
+
     @visitor.on('node')
     def visit(self, node):
         pass
 
-    @visitor.when(ProgramNode)
-    def visit(self, node: ProgramNode):
+    @visitor.when(ast.ProgramNode)
+    def visit(self, node: ast.ProgramNode):
         for declaration in node.declarations:
             self.visit(declaration)
 
         try:
             main: Type = self.context.get_type('Main')
             if main.parent not in (self.context.get_type('Object'), self.context.get_type('IO')):
-                self.errors.append('Class Main cannot inherit from another class')
+                self.errors.append(f'Class Main cannot inherit from  class {main.parent.name}')
             try:
                 method: Method = main.get_method('main')
                 if len(method.param_names) != 0:
-                    self.errors.append('the Main class must have a method main that takes no formal parameters')
+                    self.errors.append('The Main class must have a method main that takes no formal parameters')
             except:
                 self.errors.append('The Main class must have a method main')
         except:
             self.errors.append('Every program must have a class Main.')
 
-    @visitor.when(ClassDeclarationNode)
-    def visit(self, node: ClassDeclarationNode):
+    @visitor.when(ast.ClassDeclarationNode)
+    def visit(self, node: ast.ClassDeclarationNode):
         self.current_type: Type = self.context.get_type(node.id)
         if node.parent is not None:
             try:
                 parent_type: Type = self.context.get_type(node.parent)
                 self.current_type.parent = parent_type
+
+                self.__add_edge(node.id, node.parent)
+
                 if parent_type in self.non_inherit:
-                    self.errors.append(f'It is an error to inherit from type  {parent_type}')
+                    self.errors.append(f'It is an error to inherit from type {parent_type}')
             except SemanticError as error:
                 self.errors.append(str(error))
                 self.current_type.parent = ErrorType()
         else:
             self.current_type.parent = self.context.get_type('Object')
-
+            self.__add_edge(node.id, 'Object')
         for feature in node.features:
             self.visit(feature)
 
-    @visitor.when(MethodDeclarationNode)
-    def visit(self, node: MethodDeclarationNode):
+    @visitor.when(ast.MethodDeclarationNode)
+    def visit(self, node: ast.MethodDeclarationNode):
         param_names = []
         param_types = []
         for param in node.params:
-            param: VarDeclarationNode
+            param: ast.VarDeclarationNode
             try:
                 param_type: Type = self.context.get_type(param.typex)
                 if param_type.name == 'SELF_TYPE':
@@ -88,8 +116,8 @@ class TypeBuilder:
         except SemanticError as error:
             self.errors.append(str(error))
 
-    @visitor.when(AttrDeclarationNode)
-    def visit(self, node: AttrDeclarationNode):
+    @visitor.when(ast.AttrDeclarationNode)
+    def visit(self, node: ast.AttrDeclarationNode):
         att_type: Type
         try:
             att_type = self.context.get_type(node.typex)

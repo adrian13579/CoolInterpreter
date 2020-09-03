@@ -1,7 +1,7 @@
 from typing import List
 import ast
 from cmp import visitor
-from utils import Context, Type, Method, ErrorType, Attribute, Scope, VariableInfo
+from semantics.utils import Context, Type, Method, ErrorType, Attribute, Scope, VariableInfo
 from semantics.errors import *
 
 
@@ -114,7 +114,7 @@ class TypeChecker:
             method: Method = object_type.get_method(node.id)
             return_type: Type = method.return_type
             if len(method.param_types) != len(node.args):
-                self.errors.append(f'Unexpected number of arguments in method {self.current_type.name}.{node.id}')
+                self.errors.append(UNEXPECTED_NUMBER_OF_ARGUMENT % (self.current_type.name, node.id))
 
             arg_types: List[Type] = []
             for arg in node.args:
@@ -125,7 +125,7 @@ class TypeChecker:
                                        + INCOMPATIBLE_TYPES % (arg_type.name, typex.name))
         except:
             return_type = ErrorType()
-            self.errors.append(f'Method {node.id} not defined in class {self.current_type.name}')
+            self.errors.append(METHOD_NOT_DEFINED % (node.id, self.current_type.name))
         return return_type
 
     @visitor.when(ast.ConditionalNode)
@@ -230,7 +230,7 @@ class TypeChecker:
             new_type: Type = self.context.get_type(node.lex)
             return new_type
         except:
-            self.errors.append(f'Type {node.lex} not defined')
+            self.errors.append(TYPE_NOT_DEFINED % node.lex)
             return ErrorType()
 
     @visitor.when(ast.IsVoidNode)

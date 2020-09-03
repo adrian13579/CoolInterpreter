@@ -2,10 +2,9 @@ import os
 
 from cmp.evaluation import evaluate_reverse_parse
 from interpreter import Interpreter
-from semantics import TypeCollector, TypeBuilder, TypeInferencer, TypeChecker
-from semantics.types_updater import TypesUpdater
+from semantics import TypeCollector, TypeBuilder, TypeInferencer, TypeChecker, TypesUpdater
 from tools.serializers import TokenizerHandler, ParserHandler
-from utils import Context, Scope
+from semantics.utils import Context, Scope
 
 path = os.getcwd() + '/tools'
 tokenizer = TokenizerHandler.load(path + '/lexer')
@@ -24,20 +23,22 @@ def run_pipeline(args):
         context = Context()
         scope = Scope()
 
-        collector = TypeCollector(context, errors)
-        collector.visit(ast)
-        builder = TypeBuilder(context, errors)
-        builder.visit(ast)
-        inferencer = TypeInferencer(context, scope, errors)
-        inferencer.visit(ast, scope)
-        updater = TypesUpdater(inferencer.context,
-                               inferencer.scope,
-                               inferencer.functions,
-                               inferencer.attributes,
-                               inferencer.substitutions,
-                               inferencer.errors)
-        updater.visit(ast, inferencer.scope, 0)
+        # This part is for type inference
+        collector = TypeCollector(context, errors)              #
+        collector.visit(ast)                                    #
+        builder = TypeBuilder(context, errors)                  #
+        builder.visit(ast)                                      #
+        inferencer = TypeInferencer(context, scope, errors)     #
+        inferencer.visit(ast, scope)                            #
+        updater = TypesUpdater(inferencer.context,              #
+                               inferencer.scope,                #
+                               inferencer.functions,            #
+                               inferencer.attributes,           #
+                               inferencer.substitutions,        #
+                               inferencer.errors)               #
+        updater.visit(ast, inferencer.scope, 0)                 #
 
+        # Normal pipeline
         collector.context = Context()
         collector.visit(ast)
         builder.context = collector.context

@@ -1,6 +1,6 @@
-from typing import Dict, List, Optional
+from typing import Dict, List
 
-from utils import Context, Scope, Type, FunctionType, TypeVariable
+from semantics.utils import Context, Scope, Type, TypeVariable
 from cmp import visitor
 import ast
 

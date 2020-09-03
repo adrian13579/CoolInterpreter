@@ -2,7 +2,7 @@ from typing import Dict, List, Set
 from collections import OrderedDict
 import ast
 from cmp import visitor
-from utils import Context, Type, TypeVariable, FunctionType, Method, ErrorType, Scope, SemanticError, AttrMap, MethodMap
+from semantics.utils import Context, Type, TypeVariable, FunctionType, Method, ErrorType, Scope, SemanticError, AttrMap, MethodMap
 import typing
 
 TypeGraph = typing.OrderedDict[Type, Set[Type]]

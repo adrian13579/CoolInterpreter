@@ -1,8 +1,63 @@
-from typing import List
+from typing import List, Optional, Union, Any, Dict
 from cmp import visitor
-from semantics import Context
 import ast
-from utils import CoolObject, Scope, VoidObject, Attribute, Type
+from semantics import Context, Scope, Attribute, Type, VoidType, Method
+
+
+class CoolRuntimeError(Exception):
+    @property
+    def text(self) -> str:
+        return self.args[0]
+
+
+class CoolObject:
+    def __init__(self, typex: Type, value: Any = None):
+        self.type = typex
+        if value is None:
+            if typex.name == 'Int':
+                value = 0
+            elif typex.name == 'String':
+                value = ''
+            elif typex.name == 'Bool':
+                value = False
+        self._value = value
+        self.atributes: Dict[str, CoolObject] = {}
+
+    @property
+    def value(self):
+        if self._value is None:
+            return self
+        return self._value
+
+    def set_attibute(self, name: str, value: 'CoolObject') -> None:
+        try:
+            self.type.get_attribute(name)
+            self.atributes[name] = value
+        except:
+            raise CoolRuntimeError(f'Object {self.type.name} does not have an attribute named {name}')
+
+    def get_attribute(self, name) -> Union[Attribute, 'CoolObject']:
+        try:
+            return self.atributes[name]
+        except KeyError:
+            return self.type.get_attribute(name)
+
+    def get_method(self, name: str, typex: Type) -> Optional[Method]:
+        tmp_type = self.type
+        while tmp_type != typex:
+            if tmp_type.parent is not None:
+                tmp_type = tmp_type.parent
+            else:
+                return None
+        return tmp_type.get_method(name)
+
+
+class VoidObject(CoolObject):
+    def __init__(self):
+        CoolObject.__init__(self, VoidType())
+
+    def __eq__(self, other):
+        return isinstance(other, VoidObject)
 
 
 def abort(obj: CoolObject, context: Context) -> None:
@@ -138,7 +193,8 @@ class Interpreter:
                 min = types_distance
 
         if most_suitable_type == -1:
-            pass  # Stop execution and raise exception??? 😐
+            print('Error...')
+            exit()  # Stop execution and raise exception??? 😐
 
         child_scope = scope.create_child()
         new_var_type = self.context.get_type(node.options[most_suitable_type].type)

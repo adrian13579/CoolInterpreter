@@ -1,15 +1,9 @@
 import itertools as itt
 from collections import OrderedDict
-from typing import List, Dict, Optional, Union, Any, Tuple
+from typing import List, Dict, Optional, Tuple
 
 
 class SemanticError(Exception):
-    @property
-    def text(self) -> str:
-        return self.args[0]
-
-
-class CoolRuntimeError(Exception):
     @property
     def text(self) -> str:
         return self.args[0]
@@ -217,56 +211,6 @@ class Attribute:
         return str(self)
 
 
-class CoolObject:
-    def __init__(self, typex: Type, value: Any = None):
-        self.type = typex
-        if value is None:
-            if typex.name == 'Int':
-                value = 0
-            elif typex.name == 'String':
-                value = ''
-            elif typex.name == 'Bool':
-                value = False
-        self._value = value
-        self.atributes: Dict[str, CoolObject] = {}
-
-    @property
-    def value(self):
-        if self._value is None:
-            return self
-        return self._value
-
-    def set_attibute(self, name: str, value: 'CoolObject') -> None:
-        try:
-            self.type.get_attribute(name)
-            self.atributes[name] = value
-        except:
-            raise CoolRuntimeError(f'Object {self.type.name} does not have an attribute named {name}')
-
-    def get_attribute(self, name) -> Union[Attribute, 'CoolObject']:
-        try:
-            return self.atributes[name]
-        except KeyError:
-            return self.type.get_attribute(name)
-
-    def get_method(self, name: str, typex: Type) -> Optional[Method]:
-        tmp_type = self.type
-        while tmp_type != typex:
-            if tmp_type.parent is not None:
-                tmp_type = tmp_type.parent
-            else:
-                return None
-        return tmp_type.get_method(name)
-
-
-class VoidObject(CoolObject):
-    def __init__(self):
-        CoolObject.__init__(self, VoidType())
-
-    def __eq__(self, other):
-        return isinstance(other, VoidObject)
-
-
 class Context:
     def __init__(self):
         self.types: Dict[str, Type] = {}
@@ -312,7 +256,7 @@ class Scope:
         self.children.append(child)
         return child
 
-    def define_variable(self, vname: str, vtype: Type, value: CoolObject = None) -> VariableInfo:
+    def define_variable(self, vname: str, vtype: Type, value=None) -> VariableInfo:
         info = VariableInfo(vname, vtype, value)
         self.locals.append(info)
         return info
@@ -346,15 +290,15 @@ class AttrMap:
         return attributes
 
     def get_attribute(self, typex: Type, attr_name) -> Optional[Type]:
-        return self.aux_get_attribute(typex, typex, attr_name)
+        return self._aux_get_attribute(typex, typex, attr_name)
 
-    def aux_get_attribute(self, init_type: Type, typex: Type, attr_name) -> Optional[Type]:
+    def _aux_get_attribute(self, init_type: Type, typex: Type, attr_name) -> Optional[Type]:
         try:
             att_type = self.attributes[typex.name, attr_name]
             return init_type if att_type.name == 'SELF_TYPE' else att_type
         except KeyError:
             if typex.parent is not None:
-                return self.aux_get_attribute(init_type, typex.parent, attr_name)
+                return self._aux_get_attribute(init_type, typex.parent, attr_name)
 
 
 class MethodMap:
@@ -378,9 +322,9 @@ class MethodMap:
         return functions
 
     def get_function(self, typex: Type, func_name: str) -> Optional[FunctionType]:
-        return self.aux_get_function(typex, typex, func_name)
+        return self._aux_get_function(typex, typex, func_name)
 
-    def aux_get_function(self, init_type: Type, typex: Type, func_name: str) -> Optional[FunctionType]:
+    def _aux_get_function(self, init_type: Type, typex: Type, func_name: str) -> Optional[FunctionType]:
         try:
             func_type = self.functions[typex.name, func_name]
             params_type = [init_type if param.name == 'SELF_TYPE' else param for param in func_type.params_types]
@@ -388,4 +332,4 @@ class MethodMap:
             return FunctionType(tuple(params_type), return_type)
         except KeyError:
             if typex.parent is not None:
-                return self.aux_get_function(init_type, typex.parent, func_name)
+                return self._aux_get_function(init_type, typex.parent, func_name)

@@ -1,7 +1,6 @@
 from cmp.automata import State
 from cmp.utils import Token
 from cmp.lexer.regex import Regex
-from grammar import idx
 
 
 class Lexer:
@@ -32,7 +31,6 @@ class Lexer:
 
     def _walk(self, string):
         state = self.automaton
-        final = state if state.final else None
         final_lex = lex = ''
         token_type = None
         priority = 500000
@@ -43,7 +41,7 @@ class Lexer:
                 if state.final:
                     if state.tag is not None:
                         for tag in state.tag:
-                            if lex == str(tag[1]) and tag[1] != idx:
+                            if lex == str(tag[1]) and str(tag[1]) != 'id':
                                 priority, token_type = tag
                                 final_lex = lex
                                 break

@@ -51,8 +51,8 @@ if __name__ == '__main__':
     a = os.getcwd()
     t = TokenizerHandler()
     t.create()
-    t.save(os.getcwd() + '/tools/lexer')
+    t.save(os.getcwd() + '/lexer')
 
     # p = ParserHandler()
     # p.create()
-    # p.save(os.getcwd() + '/tools/parser')
+    # p.save(os.getcwd() + '/parser')
