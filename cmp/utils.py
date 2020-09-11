@@ -157,8 +157,9 @@ class Token:
         Token's type.
     """
 
-    def __init__(self, lex, token_type):
-        self.col = None
+    def __init__(self, lex, token_type, row=None, col=None):
+        self.col = col
+        self.row = row
         self.lex = lex
         self.token_type = token_type
 
