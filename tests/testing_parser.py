@@ -1,10 +1,10 @@
 from cmp.evaluation import evaluate_reverse_parse
-from tools.serializers import TokenizerHandler, ParserHandler
+from tools.serializers import Serializer as sr
 import os
 
 path = os.getcwd().replace('tests', '') + 'tools'
-tokenizer = TokenizerHandler.load(path + '/lexer')
-parser = ParserHandler.load(path + '/parser')
+tokenizer = sr.load(path + '/lexer')
+parser = sr.load(path + '/parser')
 code = '''
 class Main inherits CellularAutomaton {
     cells : CellularAutomaton;

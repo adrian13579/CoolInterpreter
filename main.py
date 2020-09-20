@@ -3,12 +3,12 @@ import os
 from cmp.evaluation import evaluate_reverse_parse
 from interpreter import Interpreter
 from semantics import TypeCollector, TypeBuilder, TypeInferencer, TypeChecker, TypesUpdater
-from tools.serializers import TokenizerHandler, ParserHandler
+from tools.serializers import Serializer
 from semantics.utils import Context, Scope
 
 path = os.getcwd() + '/tools'
-tokenizer = TokenizerHandler.load(path + '/lexer')
-parser = ParserHandler.load(path + '/parser')
+tokenizer = Serializer.load(path + '/lexer')
+parser = Serializer.load(path + '/parser')
 
 
 def run_pipeline(args):
@@ -56,7 +56,7 @@ def run_pipeline(args):
 if __name__ == '__main__':
     import argparse
 
-    args_parser = argparse.ArgumentParser(description='Basic Cool Interpreter with Type Inference')
+    args_parser = argparse.ArgumentParser(description='Simple Cool Interpreter with Type Inference')
     args_parser.add_argument('file', type=str, help='Cool program to be executed')
     arguments = args_parser.parse_args()
 

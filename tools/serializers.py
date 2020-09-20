@@ -1,58 +1,35 @@
 import os
+from typing import Any
 
 import dill
 from cmp.parsers.lr1_parser import LR1Parser
-from tokenizer import CoolTokenizer, G
+from re_lexer import CoolLexer
+from tokenizer import CoolTokenizer
+from grammar import G
 
 
-class TokenizerHandler:
-    def __init__(self):
-        self._tokenizer = None
-
-    def create(self) -> CoolTokenizer:
-        self._tokenizer = CoolTokenizer()
-        return self._tokenizer
-
-    def save(self, path):
-        if self._tokenizer is None:
-            raise Exception('You must create an instance of tokenizer first')
-        else:
-            with open(path, 'wb') as lexer:
-                dill.dump(self._tokenizer, lexer)
+class Serializer:
+    @staticmethod
+    def save(target: Any, path: str) -> bool:
+        try:
+            with open(path, 'wb') as p:
+                dill.dump(target, p)
+            return True
+        except:
+            return False
 
     @staticmethod
-    def load(path: str) -> CoolTokenizer:
-        with open(path, 'rb') as lexer:
-            return dill.load(lexer)
-
-
-class ParserHandler:
-    def __init__(self):
-        self._parser = None
-
-    def create(self) -> LR1Parser:
-        self._parser = LR1Parser(G)
-        return self._parser
-
-    def save(self, path):
-        if self._parser is None:
-            raise Exception('You must create an instance of parser first')
-        else:
-            with open(path, 'wb') as parser:
-                dill.dump(self._parser, parser)
-
-    @staticmethod
-    def load(path) -> LR1Parser:
-        with open(path, 'rb') as parser:
-            return dill.load(parser)
+    def load(path: str) -> Any:
+        try:
+            with open(path, 'rb') as p:
+                return dill.load(p)
+        except:
+            return None
 
 
 if __name__ == '__main__':
-    a = os.getcwd()
-    t = TokenizerHandler()
-    t.create()
-    t.save(os.getcwd() + '/lexer')
+    lexer = CoolLexer()
+    Serializer.save(lexer, os.getcwd() + '/lexer')
 
-    # p = ParserHandler()
-    # p.create()
-    # p.save(os.getcwd() + '/parser')
+    # parser = LR1Parser(G)
+    # Serializer.save(parser, os.getcwd() + '/parser')

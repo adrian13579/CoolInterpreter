@@ -1,8 +1,8 @@
-from tools.serializers import TokenizerHandler
+from tools.serializers import Serializer as sr
 import os
 
 path = os.getcwd().replace('tests', '') + 'tools'
-tokenizer = TokenizerHandler.load(path + '/lexer')
+tokenizer = sr.load(path + '/lexer')
 text = '''--efre3132fdvfv_2fr2f'''
 text2 = '''"\n"'''
 text3 = '''classx'''
@@ -665,9 +665,9 @@ class Lambda inherits Expr {
       out_int(n);
       out_string(" inherits Closure {\n");
       out_string("  apply(y : EvalObject) : EvalObject {\n");
-      out_string("    { out_string(\"Applying closure ");
+      out_string("    { out_string(Applying closure ");
       out_int(n);
-      out_string("\\n\");\n");
+      out_string("\\n);\n");
       out_string("      x <- y;\n");
       body.gen_code(env.add(arg), closures);
       out_string(";}};\n");
@@ -874,5 +874,10 @@ class Main inherits Term {
 
 
  '''
-for token in tokenizer(text5):
+
+text6 = '''
+out_string("Welcome to the Game of Life.\n");
+out_string("There are many initial states to choose from. \n");
+'''
+for token in tokenizer(text6):
     print(token.lex, token.token_type, token.col, token.row)

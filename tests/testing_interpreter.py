@@ -1,22 +1,23 @@
 from cmp.evaluation import evaluate_reverse_parse
 from interpreter import Interpreter
-from tools.serializers import TokenizerHandler, ParserHandler
+from re_lexer import CoolLexer
+from tools.serializers import Serializer as sr
 import os
 from semantics import TypeBuilder, TypeCollector, Context, Scope
 
 path = os.getcwd().replace('tests', '') + 'tools'
-tokenizer = TokenizerHandler.load(path + '/lexer')
-parser = ParserHandler.load(path + '/parser')
+tokenizer = sr.load(path + '/lexer')
+parser = sr.load(path + '/parser')
 
 for i, file in enumerate(os.listdir('runtime_tests')):
     txt = open('runtime_tests/' + file)
     code = txt.read()
 
-    if i == 7:
+    if i == 6:
         print('Test {} started:'.format(i))
-        tokens = list(tokenizer(text5))
+        tokens = list(tokenizer(code))
         print('Tokens:')
-        for token in tokens: print(token)
+        for token in tokens: print(token.lex)
         parse, operations = parser(tokens, get_shift_reduce=True)
         print('Parsing:')
         for j in parse: print(j)
