@@ -4,6 +4,7 @@ import ast
 from semantics.utils import Type, SemanticError, ErrorType, Context, Method
 
 
+# TODO Check the structure of the types' hierarchy
 class TypeBuilder:
     def __init__(self, context: Context, errors: List[str] = None):
         if errors is None:

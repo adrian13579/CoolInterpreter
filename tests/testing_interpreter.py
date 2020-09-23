@@ -1,9 +1,9 @@
+import os
+
 from cmp.evaluation import evaluate_reverse_parse
 from interpreter import Interpreter
-from re_lexer import CoolLexer
-from tools.serializers import Serializer as sr
-import os
 from semantics import TypeBuilder, TypeCollector, Context, Scope
+from tools.serializers import Serializer as sr
 
 path = os.getcwd().replace('tests', '') + 'tools'
 tokenizer = sr.load(path + '/lexer')
@@ -17,10 +17,12 @@ for i, file in enumerate(os.listdir('runtime_tests')):
         print('Test {} started:'.format(i))
         tokens = list(tokenizer(code))
         print('Tokens:')
-        for token in tokens: print(token.lex)
+        for token in tokens:
+            print(token.lex)
         parse, operations = parser(tokens, get_shift_reduce=True)
         print('Parsing:')
-        for j in parse: print(j)
+        for j in parse:
+            print(j)
         ast = evaluate_reverse_parse(parse, operations, tokens)
         print(ast)
 

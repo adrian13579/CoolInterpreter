@@ -29,7 +29,7 @@ class CoolObject:
             return self
         return self._value
 
-    def set_attibute(self, name: str, value: 'CoolObject') -> None:
+    def set_attribute(self, name: str, value: 'CoolObject') -> None:
         try:
             self.type.get_attribute(name)
             self.atributes[name] = value
@@ -245,7 +245,7 @@ class Interpreter:
                 new_scope = Scope()
                 new_scope.define_variable('self', self.current_object.type, self.current_object)
                 objectx = self.visit(objectx.expression, new_scope)
-                self.current_object.set_attibute(node.lex, objectx)
+                self.current_object.set_attribute(node.lex, objectx)
             return objectx
         return var.value
 
@@ -256,12 +256,12 @@ class Interpreter:
         if var is not None:
             var.value = expr
         else:
-            self.current_object.set_attibute(node.id, expr)
+            self.current_object.set_attribute(node.id, expr)
         return expr
 
     @visitor.when(ast.NotNode)
     def visit(self, node: ast.NotNode, scope: Scope) -> CoolObject:
-        return CoolObject(self.context.get_type('Bool'), not self.visit(node.expr))
+        return CoolObject(self.context.get_type('Bool'), not self.visit(node.expr, scope))
 
     @visitor.when(ast.IsVoidNode)
     def visit(self, node: ast.IsVoidNode, scope: Scope) -> CoolObject:
