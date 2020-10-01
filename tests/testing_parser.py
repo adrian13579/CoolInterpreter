@@ -47,17 +47,13 @@ class CellularAutomaton inherits Board {
  
  neighbors(position: Int): Int { 
  	{
+ 	    {
 	    ( if north(position) = "X" then 1 else 0 fi)
-	     + (if south(position) = "X" then 1 else 0 fi)
- 	     + (if east(position) = "X" then 1 else 0 fi)
- 	     + (if west(position) = "X" then 1 else 0 fi)
-	     + (if northeast(position) = "X" then 1 else 0 fi)
-	     + (if northwest(position) = "X" then 1 else 0 fi)
- 	     + (if southeast(position) = "X" then 1 else 0 fi)
 	     + (if southwest(position) = "X" then 1 else 0 fi);
+	     ~ 12312;
+	     };
 	 }
  };
-
 
 
 };
@@ -70,6 +66,7 @@ for token in tokens:
     print(token)
 parse, operations = parser(tokens, get_shift_reduce=True)
 print('Parsing:')
-for j in parse: print(j)
+for j in parse:
+    print(j)
 ast = evaluate_reverse_parse(parse, operations, tokens)
 print(ast)

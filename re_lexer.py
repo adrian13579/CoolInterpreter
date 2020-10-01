@@ -86,6 +86,7 @@ class CoolLexer(ReLexer):
                 ('comment', 'comment', r'(\(\*[\s\S]*?\*\))|(--[^\n]*\n)'),
                 (opar, 'opar', r'\('),
                 (minus, 'minus', r'-'),
+                (complement, 'complement', r'~')
             ], G.EOF
         )
 

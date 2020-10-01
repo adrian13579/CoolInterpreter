@@ -1,7 +1,7 @@
 from typing import List
 import ast
 from cmp import visitor
-from semantics.utils import Context, Type, Method, ErrorType, Attribute, Scope, VariableInfo
+from semantics.utils import Context, Type, Method, ErrorType, Attribute, Scope, VariableInfo, SemanticError
 from semantics.errors import *
 
 
@@ -53,7 +53,8 @@ class TypeChecker:
                     self.errors.append(WRONG_SIGNATURE % (node.id, self.current_type.parent.name))
                 else:
                     for i, j in zip(parent_method.param_types, self.current_method.param_types):
-                        if i != j: self.errors.append(WRONG_SIGNATURE % (node.id, self.current_type.parent.name))
+                        if i != j:
+                            self.errors.append(WRONG_SIGNATURE % (node.id, self.current_type.parent.name))
         except:
             pass
         child_scope = scope.create_child()
@@ -220,7 +221,7 @@ class TypeChecker:
         try:
             att: Attribute = self.current_type.get_attribute(node.lex)
             return att.type
-        except:
+        except SemanticError:
             self.errors.append(VARIABLE_NOT_DEFINED % (node.lex, self.current_type.name))
             return ErrorType()
 
@@ -229,7 +230,7 @@ class TypeChecker:
         try:
             new_type: Type = self.context.get_type(node.lex)
             return new_type
-        except:
+        except SemanticError:
             self.errors.append(TYPE_NOT_DEFINED % node.lex)
             return ErrorType()
 
@@ -240,10 +241,17 @@ class TypeChecker:
 
     @visitor.when(ast.NotNode)
     def visit(self, node: ast.NotNode, scope: Scope):
-        exrp_type = self.visit(node.expr, scope)
-        if exrp_type != self.context.get_type('Bool'):
-            self.errors.append(INVALID_OPERATION % (exrp_type.name, 'Bool'))
+        expr_type = self.visit(node.expr, scope)
+        if expr_type != self.context.get_type('Bool'):
+            self.errors.append(INVALID_OPERATION % (expr_type.name, 'Bool'))
         return self.context.get_type('Bool')
+
+    @visitor.when(ast.ComplementNode)
+    def visit(self, node: ast.ComplementNode, scope: Scope):
+        expr_type = self.visit(node.expr, scope)
+        if expr_type != self.context.get_type('Int'):
+            self.errors.append(INVALID_OPERATION % (expr_type.name, 'Bool'))
+        return self.context.get_type('Int')
 
     @visitor.when(ast.ConstantNumNode)
     def visit(self, node: ast.ConstantNumNode, scope: Scope):

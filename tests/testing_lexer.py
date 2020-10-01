@@ -661,12 +661,12 @@ class Main inherits Term {
   };
 };
 
-
  '''
 
 text6 = '''
 out_string("Welcome to the Game of Life.\n");
 out_string("There are many initial states to choose from. \n");
+~12
 '''
-for token in tokenizer(text5):
+for token in tokenizer(text6):
     print(token.lex, token.token_type, token.col, token.row)

@@ -4,7 +4,6 @@ import ast
 from semantics.utils import Type, SemanticError, ErrorType, Context, Method
 
 
-# TODO Check the structure of the types' hierarchy
 class TypeBuilder:
     def __init__(self, context: Context, errors: List[str] = None):
         if errors is None:
@@ -20,30 +19,23 @@ class TypeBuilder:
             self.context.get_type('SELF_TYPE'),
         )
 
-        self.__hierarchy_tree: Dict[str, List[str]] = {}
-        self.__stack = []
-        self.__visited = {}
+        self.__hierarchy_tree: Dict[str, List[str]] = {
+            'Object': ['Int', 'String', 'Bool', 'IO'],
+            'Int': [],
+            'String': [],
+            'Bool': [],
+            'IO': []
+        }
+
+    def __add_node(self, node):
+        if node not in self.__hierarchy_tree:
+            self.__hierarchy_tree[node] = []
 
     def __add_edge(self, node, parent):
         try:
             self.__hierarchy_tree[parent].append(node)
         except KeyError:
             self.__hierarchy_tree[parent] = [node]
-
-    def __cyclic_references(self):
-        for node in self.__hierarchy_tree:
-            try:
-                self.__visited[node]
-            except KeyError:
-                self.__dfs_visit(node)
-
-    def __dfs_visit(self, node):
-        for adj in self.__hierarchy_tree[node]:
-            try:
-                self.__visited[adj]
-            except KeyError:
-                self.__visited[adj] = True
-                self.__dfs_visit(adj)
 
     @visitor.on('node')
     def visit(self, node):
@@ -62,14 +54,20 @@ class TypeBuilder:
                 method: Method = main.get_method('main')
                 if len(method.param_names) != 0:
                     self.errors.append('The Main class must have a method main that takes no formal parameters')
-            except:
+            except SemanticError:
                 self.errors.append('The Main class must have a method main')
-        except:
+        except SemanticError:
             self.errors.append('Every program must have a class Main.')
+
+        try:
+            check_tree(self.__hierarchy_tree)
+        except SemanticError as error:
+            self.errors.append(str(error))
 
     @visitor.when(ast.ClassDeclarationNode)
     def visit(self, node: ast.ClassDeclarationNode):
         self.current_type: Type = self.context.get_type(node.id)
+        self.__add_node(node.id)
         if node.parent is not None:
             try:
                 parent_type: Type = self.context.get_type(node.parent)
@@ -130,3 +128,26 @@ class TypeBuilder:
             self.current_type.define_attribute(node.id, att_type)
         except SemanticError as error:
             self.errors.append(str(error))
+
+
+def visit_node(node: str, graph: Dict[str, List[str]], visited: Dict[str, bool], path: List[str]) -> None:
+    for adj_node in graph[node]:
+        if adj_node in visited:
+            path.pop()
+            raise SemanticError('Cyclic reference: ' + '->'.join([class_name for class_name in path]))
+        else:
+            path.append(adj_node)
+            visit_node(adj_node, graph, visited, path)
+            path.pop()
+            visited[adj_node] = True
+
+
+def check_tree(graph: Dict[str, List[str]]) -> None:
+    visited: Dict[str, bool] = {}
+    path: List[str] = []
+    for node in graph:
+        if node not in visited:
+            path.append(node)
+            visit_node(node, graph, visited, path)
+            path.pop()
+            visited[node] = True

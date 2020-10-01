@@ -7,11 +7,11 @@ classx, inherits, selfx, let, assigment, ifx, thenx, elsex, fi, = G.Terminals(
     'class inherits self let <- if then else fi')
 whilex, loop, pool, case, of, esac, case_assigment, new, isvoid, equal, = G.Terminals(
     'while loop pool case of esac => new isvoid =')
-less, less_equal, plus, minus, star, div, semi, colon, comma = G.Terminals('< <= + - * / ; : ,')
+less, less_equal, plus, minus, star, div, semi, colon, comma, complement = G.Terminals('< <= + - * / ; : , ~')
 dot, opar, cpar, ocur, ccur, inx, notx, idx, intx, string, true, false, at = G.Terminals(
     '. ( ) { } in not id int string true false @')
 
-# Nonterminals
+# Non-terminals
 program = G.NonTerminal('<program>', True)
 class_list, def_class = G.NonTerminals('<class-list> <class>')
 feature_list, def_func, def_attr = G.NonTerminals('<feature_list> <def-func> <def-attr>')
@@ -59,6 +59,7 @@ expr %= let + let_list + inx + expr, lambda h, s: LetNode(s[2], s[4])
 expr %= case + expr + of + case_list + esac, lambda h, s: CaseNode(s[2], s[4])
 expr %= isvoid + expr, lambda h, s: IsVoidNode(s[2])
 expr %= notx + expr, lambda h, s: NotNode(s[2])
+expr %= complement + expr, lambda h, s: ComplementNode(s[2])
 expr %= cmp, lambda h, s: s[1]
 
 cmp %= cmp + less + arith, lambda h, s: LessNode(s[1], s[3])

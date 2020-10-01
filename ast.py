@@ -111,6 +111,10 @@ class NotNode(UnaryNode):
     pass
 
 
+class ComplementNode(UnaryNode):
+    pass
+
+
 class BinaryNode(ExpressionNode):
     def __init__(self, left, right):
         self.left = left

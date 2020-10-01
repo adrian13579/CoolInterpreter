@@ -14,7 +14,7 @@ class Fact {
 };
 
 class Ackermann {
-    ackermann(m:Int, n: Int): Int{
+    ackermann(m:AUTO_TYPE, n: AUTO_TYPE): AUTO_TYPE{
         if (m = 0 ) then n+1 else
             if ( n = 0) then ackermann(m-1, 1) else
                 ackermann(m-1, ackermann(m, n-1))

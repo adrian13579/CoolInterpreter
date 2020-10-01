@@ -2,7 +2,8 @@ from typing import Dict, List, Set
 from collections import OrderedDict
 import ast
 from cmp import visitor
-from semantics.utils import Context, Type, TypeVariable, FunctionType, Method, ErrorType, Scope, SemanticError, AttrMap, MethodMap
+from semantics.utils import Context, Type, TypeVariable, FunctionType, Method, ErrorType, \
+    Scope, SemanticError, AttrMap, MethodMap
 import typing
 
 TypeGraph = typing.OrderedDict[Type, Set[Type]]
@@ -42,11 +43,11 @@ class TypeInferencer:
 
         scope.define_variable('self', self.current_type)
         for attr in attrs:
-            typex = self.visit(attr, scope)
+            self.visit(attr, scope)
 
         for method in methods:
             self.current_method = self.current_type.get_method(method.id)
-            typex = self.visit(method, scope.create_child())
+            self.visit(method, scope.create_child())
 
     @visitor.when(ast.AttrDeclarationNode)
     def visit(self, node: ast.AttrDeclarationNode, scope: Scope) -> Type:
@@ -195,6 +196,13 @@ class TypeInferencer:
         _ = self.visit(node.expr, scope)
         return bool_type
 
+    @visitor.when(ast.ComplementNode)
+    def visit(self, node: ast.ComplementNode, scope: Scope) -> Type:
+        int_type = self.context.get_type('Int')
+        expr_type = self.visit(node.expr, scope)
+        self.unify(int_type, expr_type)
+        return int_type
+
     @visitor.when(ast.ConstantNumNode)
     def visit(self, node: ast.ConstantNumNode, scope: Scope) -> Type:
         return self.context.get_type('Int')
@@ -216,11 +224,11 @@ class TypeInferencer:
             return  # self-reference
         try:
             self.types_graph[type1].add(type2)
-        except:
+        except KeyError:
             self.types_graph[type1] = {type2}
         try:
             self.types_graph[type2].add(type1)
-        except:
+        except KeyError:
             self.types_graph[type2] = {type1}
 
     def unify(self, type1: Type, type2: Type):

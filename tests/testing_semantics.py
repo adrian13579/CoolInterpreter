@@ -1,12 +1,12 @@
 from cmp.evaluation import evaluate_reverse_parse
 from semantics.types_updater import TypesUpdater
-from tools.serializers import TokenizerHandler, ParserHandler
+from tools.serializers import Serializer as sr
 import os
 from semantics import TypeBuilder, TypeCollector, TypeInferencer, Context, Scope, TypeChecker
 
 path = os.getcwd().replace('tests', '') + 'tools'
-tokenizer = TokenizerHandler.load(path + '/lexer')
-parser = ParserHandler.load(path + '/parser')
+tokenizer = sr.load(path + '/lexer')
+parser = sr.load(path + '/parser')
 
 for i, file in enumerate(os.listdir('semantics_tests')):
     txt = open('semantics_tests/' + file)
@@ -27,7 +27,7 @@ for i, file in enumerate(os.listdir('semantics_tests')):
             errors = []
             context = Context()
             scope = Scope()
-
+            
             collector = TypeCollector(context, errors)
             collector.visit(ast)
             builder = TypeBuilder(context, errors)

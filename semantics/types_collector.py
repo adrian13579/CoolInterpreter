@@ -2,7 +2,7 @@ from typing import List
 
 from ast import ProgramNode, ClassDeclarationNode
 from cmp import visitor
-from semantics.utils import Context, ErrorType, Type, VoidType
+from semantics.utils import Context, ErrorType, Type, VoidType, SemanticError
 
 
 class TypeCollector(object):
@@ -49,5 +49,5 @@ class TypeCollector(object):
     def visit(self, node: ClassDeclarationNode):
         try:
             self.context.get_type(node.id)
-        except:
+        except SemanticError:
             self.context.create_type(node.id)
