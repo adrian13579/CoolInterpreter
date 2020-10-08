@@ -35,7 +35,7 @@ class TypeChecker:
 
     @visitor.when(ast.AttrDeclarationNode)
     def visit(self, node: ast.AttrDeclarationNode, scope: Scope):
-        att_type: Type = self.context.get_type(node.typex)
+        att_type: Type = self.context.get_type(node.typex) if node.typex != 'SELF_TYPE' else self.current_type
         if node.expression is not None:
             expr_type: Type = self.visit(node.expression, scope)
             if not expr_type.conforms_to(att_type):
@@ -55,18 +55,22 @@ class TypeChecker:
                     for i, j in zip(parent_method.param_types, self.current_method.param_types):
                         if i != j:
                             self.errors.append(WRONG_SIGNATURE % (node.id, self.current_type.parent.name))
-        except:
+        except SemanticError:
             pass
+
         child_scope = scope.create_child()
         for param in node.params:
-            typex: Type = self.context.get_type(param.typex)
+            typex: Type = self.context.get_type(param.typex) if param.typex != 'SELF_TYPE' else self.current_type
             child_scope.define_variable(param.id, typex)
 
         expr_type: Type = self.context.get_type('Void')
+        return_type = self.current_method.return_type \
+            if self.current_method.return_type != 'SELF_TYPE' else self.current_type
+
         if node.body is not None:
             expr_type = self.visit(node.body, child_scope)
         if self.current_method.return_type != self.context.get_type('Void') \
-                and not expr_type.conforms_to(self.current_method.return_type):
+                and not expr_type.conforms_to(return_type):
             self.errors.append(INCOMPATIBLE_TYPES % (expr_type.name, self.current_method.return_type.name))
 
     @visitor.when(ast.VarDeclarationNode)
@@ -87,12 +91,13 @@ class TypeChecker:
         expr_type: Type = self.visit(node.expr, scope)
         if scope.is_defined(node.id):
             var_type: Type = scope.find_variable(node.id).type
+            var_type = self.current_type if var_type.name == 'SELF_TYPE' else var_type
         else:
             try:
                 self.current_type: Type
                 att = self.current_type.get_attribute(node.id)
                 var_type = att.type
-            except:
+            except SemanticError:
                 self.errors.append(VARIABLE_NOT_DEFINED % (node.id, self.current_method.name))
                 var_type = ErrorType()
         if not expr_type.conforms_to(var_type):
@@ -105,6 +110,8 @@ class TypeChecker:
             object_type = self.visit(node.expr, scope)
             if node.type is not None:
                 node_type = self.context.get_type(node.type)
+                if node_type.name == 'SELF_TYPE':
+                    node_type = object_type
                 if object_type.conforms_to(node_type):
                     object_type = node_type
                 else:
@@ -113,7 +120,7 @@ class TypeChecker:
             self.errors.append('Invalid method call')
         try:
             method: Method = object_type.get_method(node.id)
-            return_type: Type = method.return_type
+            return_type: Type = method.return_type if method.name != 'SELF_TYPE' else object_type
             if len(method.param_types) != len(node.args):
                 self.errors.append(UNEXPECTED_NUMBER_OF_ARGUMENT % (self.current_type.name, node.id))
 
@@ -124,7 +131,7 @@ class TypeChecker:
                 if not arg_type.conforms_to(typex):
                     self.errors.append(f'Incorrect argument type in method {self.current_type.name}.{node.id}:'
                                        + INCOMPATIBLE_TYPES % (arg_type.name, typex.name))
-        except:
+        except SemanticError:
             return_type = ErrorType()
             self.errors.append(METHOD_NOT_DEFINED % (node.id, self.current_type.name))
         return return_type
@@ -179,6 +186,8 @@ class TypeChecker:
             option: ast.CaseOptionNode
             child_scope: Scope = scope.create_child()
             option_type: Type = self.context.get_type(option.type)
+            if option_type.name == 'SELF_TYPE':
+                option_type = self.current_type
             child_scope.define_variable(option.id, option_type)
             typex: Type = self.visit(option.expr, child_scope)
             case_types.append(typex)
@@ -217,10 +226,10 @@ class TypeChecker:
     def visit(self, node: ast.VariableNode, scope: Scope):
         if scope.is_defined(node.lex):
             var: VariableInfo = scope.find_variable(node.lex)
-            return var.type
+            return var.type if var.type.name != 'SELF_TYPE' else self.current_type
         try:
             att: Attribute = self.current_type.get_attribute(node.lex)
-            return att.type
+            return att.type if att.type.name != 'SELF_TYPE' else self.current_type
         except SemanticError:
             self.errors.append(VARIABLE_NOT_DEFINED % (node.lex, self.current_type.name))
             return ErrorType()
@@ -229,7 +238,7 @@ class TypeChecker:
     def visit(self, node: ast.InstantiateNode, scope: Scope):
         try:
             new_type: Type = self.context.get_type(node.lex)
-            return new_type
+            return new_type if new_type.name != 'SELF_TYPE' else self.current_type
         except SemanticError:
             self.errors.append(TYPE_NOT_DEFINED % node.lex)
             return ErrorType()
