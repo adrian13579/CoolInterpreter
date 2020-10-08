@@ -85,6 +85,7 @@ class TypesUpdater:
         i = 0
         for var in node.var_decl_list:
             i = self.visit(var, scope.children[index], i)
+        self.visit(node.in_expr, scope.children[index], i)
         return index + 1
 
     @visitor.when(ast.AssignNode)

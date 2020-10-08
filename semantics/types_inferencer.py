@@ -128,7 +128,7 @@ class TypeInferencer:
             typex = self.context.get_type(node.type)
 
         # checks if the type is known
-        if typex.name[0] == 'T':
+        if isinstance(typex, TypeVariable):
             self.errors.append('Inference error')
         else:
             function = self.functions.get_function(typex, node.id)

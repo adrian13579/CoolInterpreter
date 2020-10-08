@@ -12,14 +12,15 @@ for i, file in enumerate(os.listdir('semantics_tests')):
     txt = open('semantics_tests/' + file)
     code = txt.read()
 
-    if i == 9:
+    if i == 8:
         print('Test {} started:'.format(i))
         tokens = list(tokenizer(code))
         print('Tokens:')
         print(tokens, '\n')
         parse, operations = parser(tokens, get_shift_reduce=True)
         print('Parsing:')
-        for j in parse: print(j)
+        for j in parse: 
+            print(j)
         ast = evaluate_reverse_parse(parse, operations, tokens)
         print(ast)
 

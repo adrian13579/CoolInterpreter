@@ -33,7 +33,8 @@ class TypeBuilder:
 
     def __add_edge(self, node, parent):
         try:
-            self.__hierarchy_tree[parent].append(node)
+            if node not in self.__hierarchy_tree[parent]:
+                self.__hierarchy_tree[parent].append(node)
         except KeyError:
             self.__hierarchy_tree[parent] = [node]
 
