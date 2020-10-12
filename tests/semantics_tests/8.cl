@@ -2,7 +2,7 @@ class Main inherits IO{
     a :  SELF_TYPE ;
     main(): AUTO_TYPE {{
         a; --<- new Ackermann;
-       -- a.ackermann(1,3);
+            -- a.ackermann(1,3);
         }
     };
 };

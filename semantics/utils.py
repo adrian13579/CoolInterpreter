@@ -31,15 +31,15 @@ class Type:
         return distance
 
     @staticmethod
-    def least_type(*types) -> 'Type':
+    def join_types(*types) -> 'Type':
         types = list(types)
         typex: Type = types[0]
         for i in range(1, len(types)):
-            typex = Type.least_type_aux(typex, types[i])
+            typex = Type.join_types_aux(typex, types[i])
         return typex
 
     @staticmethod
-    def least_type_aux(a: 'Type', b: 'Type') -> 'Type':
+    def join_types_aux(a: 'Type', b: 'Type') -> 'Type':
         if a is None or b is None:
             return ErrorType()
         while a != b:

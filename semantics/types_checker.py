@@ -146,7 +146,7 @@ class TypeChecker:
         then_type: Type = self.visit(node.then_body, scope.create_child())
         else_type: Type = self.visit(node.else_body, scope.create_child())
 
-        return Type.least_type(then_type, else_type)
+        return Type.join_types(then_type, else_type)
 
     @visitor.when(ast.LoopNode)
     def visit(self, node: ast.LoopNode, scope: Scope):
@@ -192,7 +192,7 @@ class TypeChecker:
             typex: Type = self.visit(option.expr, child_scope)
             case_types.append(typex)
 
-        return Type.least_type(*case_types)
+        return Type.join_types(*case_types)
 
     @visitor.when(ast.BlocksNode)
     def visit(self, node: ast.BlocksNode, scope: Scope):

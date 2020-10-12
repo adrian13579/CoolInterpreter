@@ -9,7 +9,6 @@ import typing
 TypeGraph = typing.OrderedDict[Type, Set[Type]]
 
 
-# TODO: Attributes error
 class TypeInferencer:
     def __init__(self, context: Context, scope: Scope, errors: List[str]):
         self.errors = errors
@@ -76,7 +75,11 @@ class TypeInferencer:
         self.unify(bool_type, cond_type)
         then_type = self.visit(node.then_body, scope.create_child())
         else_type = self.visit(node.else_body, scope.create_child())
-        return self.context.get_type('Object')
+
+        if isinstance(then_type, TypeVariable) or isinstance(else_type, TypeVariable):
+            return self.context.get_type('Object')
+
+        return Type.join_types(then_type, else_type)
 
     @visitor.when(ast.CaseNode)
     def visit(self, node: ast.CaseNode, scope: Scope) -> Type:
@@ -86,7 +89,11 @@ class TypeInferencer:
             child_scope = scope.create_child()
             child_scope.define_variable(option.id, self.context.get_type(option.type))
             types.append(self.visit(option.expr, child_scope))
-        return self.context.get_type('Object')
+
+        if any(isinstance(typex, TypeVariable) for typex in types):
+            return self.context.get_type('Object')
+
+        return Type.join_types(types)
 
     @visitor.when(ast.LetNode)
     def visit(self, node: ast.LetNode, scope: Scope):

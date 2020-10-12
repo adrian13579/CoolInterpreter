@@ -1,4 +1,5 @@
 from cmp.evaluation import evaluate_reverse_parse
+from format_visitor import FormatVisitor
 from semantics.types_updater import TypesUpdater
 from tools.serializers import Serializer as sr
 import os
@@ -12,7 +13,7 @@ for i, file in enumerate(os.listdir('semantics_tests')):
     txt = open('semantics_tests/' + file)
     code = txt.read()
 
-    if i == 8:
+    if i == 4:
         print('Test {} started:'.format(i))
         tokens = list(tokenizer(code))
         print('Tokens:')
@@ -28,11 +29,16 @@ for i, file in enumerate(os.listdir('semantics_tests')):
             errors = []
             context = Context()
             scope = Scope()
-            
+
+            formatter = FormatVisitor()
+            tree = formatter.visit(ast, 1)
+            print(tree)
+
             collector = TypeCollector(context, errors)
             collector.visit(ast)
             builder = TypeBuilder(context, errors)
             builder.visit(ast)
+
             inferencer = TypeInferencer(context, scope, errors)
             inferencer.visit(ast, scope)
             updater = TypesUpdater(inferencer.context,
@@ -43,6 +49,8 @@ for i, file in enumerate(os.listdir('semantics_tests')):
                                    inferencer.errors)
             print(context)
             updater.visit(ast, inferencer.scope, 0)
+
+            print(formatter.visit(ast, 1))
 
             collector.context = Context()
             collector.visit(ast)
