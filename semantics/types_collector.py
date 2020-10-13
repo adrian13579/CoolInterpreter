@@ -1,6 +1,6 @@
 from typing import List
 
-from ast import ProgramNode, ClassDeclarationNode
+from cool_ast import ProgramNode, ClassDeclarationNode
 from cmp import visitor
 from semantics.utils import Context, ErrorType, Type, VoidType, SemanticError
 

@@ -1,6 +1,6 @@
 from typing import List, Dict
 from cmp import visitor
-import ast
+import cool_ast
 from semantics.utils import Type, SemanticError, ErrorType, Context, Method
 
 
@@ -11,13 +11,7 @@ class TypeBuilder:
         self.context = context
         self.current_type = None
         self.errors = errors
-        self.non_inherit = (
-            self.context.get_type('String'),
-            self.context.get_type('Int'),
-            self.context.get_type('Bool'),
-            self.context.get_type('AUTO_TYPE'),
-            self.context.get_type('SELF_TYPE'),
-        )
+        self.non_inherit = None
 
         self.__hierarchy_tree: Dict[str, List[str]] = {
             'Object': ['Int', 'String', 'Bool', 'IO'],
@@ -42,8 +36,16 @@ class TypeBuilder:
     def visit(self, node):
         pass
 
-    @visitor.when(ast.ProgramNode)
-    def visit(self, node: ast.ProgramNode):
+    @visitor.when(cool_ast.ProgramNode)
+    def visit(self, node: cool_ast.ProgramNode):
+        self.non_inherit = (
+            self.context.get_type('String'),
+            self.context.get_type('Int'),
+            self.context.get_type('Bool'),
+            self.context.get_type('AUTO_TYPE'),
+            self.context.get_type('SELF_TYPE'),
+        )
+
         for declaration in node.declarations:
             self.visit(declaration)
 
@@ -65,8 +67,8 @@ class TypeBuilder:
         except SemanticError as error:
             self.errors.append(str(error))
 
-    @visitor.when(ast.ClassDeclarationNode)
-    def visit(self, node: ast.ClassDeclarationNode):
+    @visitor.when(cool_ast.ClassDeclarationNode)
+    def visit(self, node: cool_ast.ClassDeclarationNode):
         self.current_type: Type = self.context.get_type(node.id)
         self.__add_node(node.id)
         if node.parent is not None:
@@ -87,12 +89,12 @@ class TypeBuilder:
         for feature in node.features:
             self.visit(feature)
 
-    @visitor.when(ast.MethodDeclarationNode)
-    def visit(self, node: ast.MethodDeclarationNode):
+    @visitor.when(cool_ast.MethodDeclarationNode)
+    def visit(self, node: cool_ast.MethodDeclarationNode):
         param_names = []
         param_types = []
         for param in node.params:
-            param: ast.VarDeclarationNode
+            param: cool_ast.VarDeclarationNode
             try:
                 param_type: Type = self.context.get_type(param.typex)
                 if param_type.name == 'SELF_TYPE':
@@ -116,8 +118,8 @@ class TypeBuilder:
         except SemanticError as error:
             self.errors.append(str(error))
 
-    @visitor.when(ast.AttrDeclarationNode)
-    def visit(self, node: ast.AttrDeclarationNode):
+    @visitor.when(cool_ast.AttrDeclarationNode)
+    def visit(self, node: cool_ast.AttrDeclarationNode):
         att_type: Type
         try:
             att_type = self.context.get_type(node.typex)

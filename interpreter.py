@@ -1,6 +1,6 @@
 from typing import List, Optional, Union, Any, Dict
 from cmp import visitor
-import ast
+import cool_ast
 from semantics import Context, Scope, Attribute, Type, VoidType, Method
 
 
@@ -127,8 +127,8 @@ class Interpreter:
     def visit(self, node, scope: Scope):
         pass
 
-    @visitor.when(ast.ProgramNode)
-    def visit(self, node: ast.ProgramNode, scope: Scope) -> None:
+    @visitor.when(cool_ast.ProgramNode)
+    def visit(self, node: cool_ast.ProgramNode, scope: Scope) -> None:
         for class_decl in node.declarations:
             self.visit(class_decl, scope)
 
@@ -136,10 +136,10 @@ class Interpreter:
         scope.define_variable('self', self.current_object.type, self.current_object)
         self.visit(self.current_object.get_method('main', self.current_object.type).expression, scope)
 
-    @visitor.when(ast.ClassDeclarationNode)
-    def visit(self, node: ast.ClassDeclarationNode, scope: Scope) -> None:
-        attributes = [feature for feature in node.features if isinstance(feature, ast.AttrDeclarationNode)]
-        methods = [feature for feature in node.features if isinstance(feature, ast.MethodDeclarationNode)]
+    @visitor.when(cool_ast.ClassDeclarationNode)
+    def visit(self, node: cool_ast.ClassDeclarationNode, scope: Scope) -> None:
+        attributes = [feature for feature in node.features if isinstance(feature, cool_ast.AttrDeclarationNode)]
+        methods = [feature for feature in node.features if isinstance(feature, cool_ast.MethodDeclarationNode)]
 
         current_type = self.context.get_type(node.id)
         for attr in attributes:
@@ -150,29 +150,29 @@ class Interpreter:
             type_method = current_type.get_method(method.id)
             type_method.expression = method.body
 
-    @visitor.when(ast.BlocksNode)
-    def visit(self, node: ast.BlocksNode, scope: Scope) -> CoolObject:
+    @visitor.when(cool_ast.BlocksNode)
+    def visit(self, node: cool_ast.BlocksNode, scope: Scope) -> CoolObject:
         cool_object = VoidObject()
         for expr in node.expr_list:
             cool_object = self.visit(expr, scope)
         return cool_object
 
-    @visitor.when(ast.ConditionalNode)
-    def visit(self, node: ast.ConditionalNode, scope: Scope) -> CoolObject:
+    @visitor.when(cool_ast.ConditionalNode)
+    def visit(self, node: cool_ast.ConditionalNode, scope: Scope) -> CoolObject:
         condition = self.visit(node.condition, scope)
         if condition.value:
             return self.visit(node.then_body, scope.create_child())
         return self.visit(node.else_body, scope.create_child())
 
-    @visitor.when(ast.LoopNode)
-    def visit(self, node: ast.LoopNode, scope: Scope) -> VoidObject:
+    @visitor.when(cool_ast.LoopNode)
+    def visit(self, node: cool_ast.LoopNode, scope: Scope) -> VoidObject:
         child_scope = scope.create_child()
         while self.visit(node.condition, child_scope).value:
             self.visit(node.body, child_scope)
         return VoidObject()
 
-    @visitor.when(ast.LetNode)
-    def visit(self, node: ast.LetNode, scope: Scope) -> CoolObject:
+    @visitor.when(cool_ast.LetNode)
+    def visit(self, node: cool_ast.LetNode, scope: Scope) -> CoolObject:
         child_scope = scope.create_child()
         for var in node.var_decl_list:
             var_type = self.context.get_type(var.typex)
@@ -180,8 +180,8 @@ class Interpreter:
             child_scope.define_variable(var.id, var_type, var_object)
         return self.visit(node.in_expr, child_scope)
 
-    @visitor.when(ast.CaseNode)
-    def visit(self, node: ast.CaseNode, scope: Scope) -> CoolObject:
+    @visitor.when(cool_ast.CaseNode)
+    def visit(self, node: cool_ast.CaseNode, scope: Scope) -> CoolObject:
         expr = self.visit(node.case_expr, scope)
         min = 1e10
         most_suitable_type = 0
@@ -203,8 +203,8 @@ class Interpreter:
         case_object = self.visit(node.options[most_suitable_type].expr, child_scope)
         return case_object
 
-    @visitor.when(ast.MethodCallNode)
-    def visit(self, node: ast.MethodCallNode, scope: Scope) -> CoolObject:
+    @visitor.when(cool_ast.MethodCallNode)
+    def visit(self, node: cool_ast.MethodCallNode, scope: Scope) -> CoolObject:
         expr = self.visit(node.expr, scope) if node.expr is not None else self.current_object
         typex = self.context.get_type(node.type) if node.type is not None else expr.type
         method = expr.get_method(node.id, typex)
@@ -232,12 +232,12 @@ class Interpreter:
         self.current_object = self.stack.pop()
         return method_return
 
-    @visitor.when(ast.MethodDeclarationNode)
-    def visit(self, node: ast.MethodDeclarationNode, scope: Scope) -> CoolObject:
+    @visitor.when(cool_ast.MethodDeclarationNode)
+    def visit(self, node: cool_ast.MethodDeclarationNode, scope: Scope) -> CoolObject:
         return VoidObject() if node.body is None else self.visit(node.body, scope)
 
-    @visitor.when(ast.VariableNode)
-    def visit(self, node: ast.VariableNode, scope: Scope) -> CoolObject:
+    @visitor.when(cool_ast.VariableNode)
+    def visit(self, node: cool_ast.VariableNode, scope: Scope) -> CoolObject:
         var = scope.find_variable(node.lex)
         if var is None:
             objectx = self.current_object.get_attribute(node.lex)
@@ -249,8 +249,8 @@ class Interpreter:
             return objectx
         return var.value
 
-    @visitor.when(ast.AssignNode)
-    def visit(self, node: ast.AssignNode, scope: Scope) -> CoolObject:
+    @visitor.when(cool_ast.AssignNode)
+    def visit(self, node: cool_ast.AssignNode, scope: Scope) -> CoolObject:
         expr = self.visit(node.expr, scope)
         var = scope.find_variable(node.id)
         if var is not None:
@@ -259,32 +259,32 @@ class Interpreter:
             self.current_object.set_attribute(node.id, expr)
         return expr
 
-    @visitor.when(ast.NotNode)
-    def visit(self, node: ast.NotNode, scope: Scope) -> CoolObject:
+    @visitor.when(cool_ast.NotNode)
+    def visit(self, node: cool_ast.NotNode, scope: Scope) -> CoolObject:
         return CoolObject(self.context.get_type('Bool'), not self.visit(node.expr, scope))
 
-    @visitor.when(ast.IsVoidNode)
-    def visit(self, node: ast.IsVoidNode, scope: Scope) -> CoolObject:
+    @visitor.when(cool_ast.IsVoidNode)
+    def visit(self, node: cool_ast.IsVoidNode, scope: Scope) -> CoolObject:
         return CoolObject(self.context.get_type('Bool'), isinstance(self.visit(node.expr, scope), VoidObject))
 
-    @visitor.when(ast.ConstantNumNode)
-    def visit(self, node: ast.ConstantNumNode, scope: Scope) -> CoolObject:
+    @visitor.when(cool_ast.ConstantNumNode)
+    def visit(self, node: cool_ast.ConstantNumNode, scope: Scope) -> CoolObject:
         return CoolObject(self.context.get_type('Int'), int(node.lex))
 
-    @visitor.when(ast.InstantiateNode)
-    def visit(self, node: ast.InstantiateNode, scope: Scope) -> CoolObject:
+    @visitor.when(cool_ast.InstantiateNode)
+    def visit(self, node: cool_ast.InstantiateNode, scope: Scope) -> CoolObject:
         return CoolObject(self.context.get_type(node.lex))
 
-    @visitor.when(ast.BooleanNode)
-    def visit(self, node: ast.BooleanNode, scope: Scope) -> CoolObject:
+    @visitor.when(cool_ast.BooleanNode)
+    def visit(self, node: cool_ast.BooleanNode, scope: Scope) -> CoolObject:
         return CoolObject(self.context.get_type('Bool'), node.lex == 'true')
 
-    @visitor.when(ast.StringNode)
-    def visit(self, node: ast.StringNode, scope: Scope) -> CoolObject:
+    @visitor.when(cool_ast.StringNode)
+    def visit(self, node: cool_ast.StringNode, scope: Scope) -> CoolObject:
         return CoolObject(self.context.get_type('String'), node.lex)
 
-    @visitor.when(ast.BinaryNode)
-    def visit(self, node: ast.BinaryNode, scope: Scope) -> CoolObject:
+    @visitor.when(cool_ast.BinaryNode)
+    def visit(self, node: cool_ast.BinaryNode, scope: Scope) -> CoolObject:
         left = self.visit(node.left, scope)
         right = self.visit(node.right, scope)
         return self.operate(node, left.value, right.value)
@@ -293,30 +293,30 @@ class Interpreter:
     def operate(self, node, left, right) -> CoolObject:
         pass
 
-    @visitor.when(ast.PlusNode)
+    @visitor.when(cool_ast.PlusNode)
     def operate(self, node, left, right):
         return CoolObject(self.context.get_type('Int'), left + right)
 
-    @visitor.when(ast.MinusNode)
+    @visitor.when(cool_ast.MinusNode)
     def operate(self, node, left, right):
         return CoolObject(self.context.get_type('Int'), left - right)
 
-    @visitor.when(ast.StarNode)
+    @visitor.when(cool_ast.StarNode)
     def operate(self, node, left, right):
         return CoolObject(self.context.get_type('Int'), left * right)
 
-    @visitor.when(ast.DivNode)
+    @visitor.when(cool_ast.DivNode)
     def operate(self, node, left, right):
         return CoolObject(self.context.get_type('Int'), left // right)
 
-    @visitor.when(ast.EqualsNode)
+    @visitor.when(cool_ast.EqualsNode)
     def operate(self, node, left, right):
         return CoolObject(self.context.get_type('Bool'), left == right)
 
-    @visitor.when(ast.LessOrEqualNode)
+    @visitor.when(cool_ast.LessOrEqualNode)
     def operate(self, node, left, right):
         return CoolObject(self.context.get_type('Bool'), left <= right)
 
-    @visitor.when(ast.LessNode)
+    @visitor.when(cool_ast.LessNode)
     def operate(self, node, left, right):
         return CoolObject(self.context.get_type('Bool'), left < right)
