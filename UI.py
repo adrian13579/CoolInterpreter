@@ -1,10 +1,8 @@
 import os
 
 import streamlit as st
-from contextlib import redirect_stdout
 from cmp.evaluation import evaluate_reverse_parse
 from format_visitor import FormatVisitor
-from interpreter import Interpreter
 from semantics import TypeCollector, TypeBuilder, TypeInferencer, TypeChecker, TypesUpdater
 from tools.serializers import Serializer
 from semantics.utils import Context, Scope
@@ -101,6 +99,3 @@ if __name__ == '__main__':
             if errors:
                 st.markdown('# Errors')
                 st.write(errors)
-            # else:
-            #     interpreter = Interpreter(builder.context)
-            #     interpreter.visit(ast, Scope())

@@ -29,6 +29,7 @@ class TypeChecker:
     @visitor.when(cool_ast.ClassDeclarationNode)
     def visit(self, node: cool_ast.ClassDeclarationNode, scope: Scope):
         self.current_type: Type = self.context.get_type(node.id)
+        scope.define_variable('self', self.current_type)
 
         for feature in node.features:
             self.visit(feature, scope)

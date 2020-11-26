@@ -12,7 +12,7 @@ cmp/parsers/__pycache__/
 cool-manual.pdf
 tests/code1.py
 tests/qwq.py
-
+.vscode/
 cmp/tools/.ipynb_checkpoints/
 cmp/tools/__init__.py
 cmp/tools/automata.py

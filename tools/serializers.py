@@ -2,10 +2,7 @@ import os
 from typing import Any
 
 import dill
-from cmp.parsers.lr1_parser import LR1Parser
 from re_lexer import CoolLexer
-from tokenizer import CoolTokenizer
-from grammar import G
 
 
 class Serializer:
