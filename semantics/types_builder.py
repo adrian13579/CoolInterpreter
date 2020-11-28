@@ -97,8 +97,8 @@ class TypeBuilder:
             param: cool_ast.VarDeclarationNode
             try:
                 param_type: Type = self.context.get_type(param.typex)
-                if param_type.name == 'SELF_TYPE':
-                    param_type = self.current_type
+                # if param_type.name == 'SELF_TYPE':
+                #     param_type = self.current_type
             except SemanticError as error:
                 self.errors.append(str(error))
                 param_type = ErrorType()
@@ -107,8 +107,8 @@ class TypeBuilder:
 
         try:
             return_type = self.context.get_type(node.type)
-            if return_type.name == 'SELF_TYPE':
-                return_type = self.current_type
+            # if return_type.name == 'SELF_TYPE':
+            #     return_type = self.current_type
         except SemanticError as error:
             self.errors.append(str(error))
             return_type = ErrorType()

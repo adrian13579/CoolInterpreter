@@ -1,7 +1,7 @@
 from typing import List
 import cool_ast
 from cmp import visitor
-from semantics.utils import Context, Type, Method, ErrorType, Attribute, Scope, VariableInfo, SemanticError
+from semantics.utils import Context, Type, Method, ErrorType, Attribute, Scope, VariableInfo, SemanticError, SelfType
 from semantics.errors import *
 
 
@@ -29,14 +29,14 @@ class TypeChecker:
     @visitor.when(cool_ast.ClassDeclarationNode)
     def visit(self, node: cool_ast.ClassDeclarationNode, scope: Scope):
         self.current_type: Type = self.context.get_type(node.id)
-        scope.define_variable('self', self.current_type)
+        scope.define_variable('self', self.context.get_type('SELF_TYPE'))
 
         for feature in node.features:
             self.visit(feature, scope)
 
     @visitor.when(cool_ast.AttrDeclarationNode)
     def visit(self, node: cool_ast.AttrDeclarationNode, scope: Scope):
-        att_type: Type = self.context.get_type(node.typex) if node.typex != 'SELF_TYPE' else self.current_type
+        att_type: Type = self.context.get_type(node.typex)  # if node.typex != 'SELF_TYPE' else self.current_type
         if node.expression is not None:
             expr_type: Type = self.visit(node.expression, scope)
             if not expr_type.conforms_to(att_type):
@@ -61,12 +61,13 @@ class TypeChecker:
 
         child_scope = scope.create_child()
         for param in node.params:
-            typex: Type = self.context.get_type(param.typex) if param.typex != 'SELF_TYPE' else self.current_type
+            typex: Type = self.context.get_type(param.typex)
+            if typex.name == 'SELF_TYPE':
+                self.errors.append(FORBIDDEN_SELF_TYPE % self.current_type.name)
             child_scope.define_variable(param.id, typex)
 
         expr_type: Type = self.context.get_type('Void')
-        return_type = self.current_method.return_type \
-            if self.current_method.return_type != 'SELF_TYPE' else self.current_type
+        return_type = self.current_method.return_type
 
         if node.body is not None:
             expr_type = self.visit(node.body, child_scope)
@@ -92,7 +93,7 @@ class TypeChecker:
         expr_type: Type = self.visit(node.expr, scope)
         if scope.is_defined(node.id):
             var_type: Type = scope.find_variable(node.id).type
-            var_type = self.current_type if var_type.name == 'SELF_TYPE' else var_type
+            var_type = self.current_type  # if var_type.name == 'SELF_TYPE' else var_type
         else:
             try:
                 self.current_type: Type
@@ -123,6 +124,9 @@ class TypeChecker:
         try:
             method: Method = object_type.get_method(node.id)
             return_type: Type = method.return_type if method.return_type.name != 'SELF_TYPE' else object_type
+            if node.expr is None:  # the method called belongs to the current class
+                return_type: Type = self.context.get_type(method.return_type.name)
+
             if len(method.param_types) != len(node.args):
                 self.errors.append(UNEXPECTED_NUMBER_OF_ARGUMENT % (self.current_type.name, node.id))
 
@@ -190,6 +194,7 @@ class TypeChecker:
             option_type: Type = self.context.get_type(option.type)
             if option_type.name == 'SELF_TYPE':
                 option_type = self.current_type
+                self.errors.append(FORBIDDEN_SELF_TYPE % self.current_type.name)
             child_scope.define_variable(option.id, option_type)
             typex: Type = self.visit(option.expr, child_scope)
             case_types.append(typex)
@@ -228,10 +233,10 @@ class TypeChecker:
     def visit(self, node: cool_ast.VariableNode, scope: Scope):
         if scope.is_defined(node.lex):
             var: VariableInfo = scope.find_variable(node.lex)
-            return var.type if var.type.name != 'SELF_TYPE' else self.current_type
+            return var.type
         try:
             att: Attribute = self.current_type.get_attribute(node.lex)
-            return att.type if att.type.name != 'SELF_TYPE' else self.current_type
+            return att.type
         except SemanticError:
             self.errors.append(VARIABLE_NOT_DEFINED % (node.lex, self.current_type.name))
             return ErrorType()
@@ -240,7 +245,7 @@ class TypeChecker:
     def visit(self, node: cool_ast.InstantiateNode, scope: Scope):
         try:
             new_type: Type = self.context.get_type(node.lex)
-            return new_type if new_type.name != 'SELF_TYPE' else self.current_type
+            return new_type
         except SemanticError:
             self.errors.append(TYPE_NOT_DEFINED % node.lex)
             return ErrorType()

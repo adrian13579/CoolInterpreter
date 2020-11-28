@@ -40,7 +40,7 @@ class TypeInferencer:
         attrs = [feature for feature in node.features if isinstance(feature, cool_ast.AttrDeclarationNode)]
         methods = [feature for feature in node.features if isinstance(feature, cool_ast.MethodDeclarationNode)]
 
-        scope.define_variable('self', self.current_type)
+        scope.define_variable('self', self.context.get_type('SELF_TYPE'))
         for attr in attrs:
             self.visit(attr, scope)
 
@@ -249,7 +249,7 @@ class TypeInferencer:
         elif type1.name == type2.name or type2.conforms_to(type1) or type1.conforms_to(type2):
             pass
         else:
-            raise Exception(f'Types mismatch {type1.name} {type2.name}')
+            raise Exception(f'Types mismatch: Type {type1.name} is not compatible with Type {type2.name}')
 
     def dfs_inference(self):
         vertices: List[Type] = []
