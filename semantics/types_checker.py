@@ -29,7 +29,7 @@ class TypeChecker:
     @visitor.when(cool_ast.ClassDeclarationNode)
     def visit(self, node: cool_ast.ClassDeclarationNode, scope: Scope):
         self.current_type: Type = self.context.get_type(node.id)
-        scope.define_variable('self', self.context.get_type('SELF_TYPE'))
+        scope.define_variable('self', SelfType(self.current_type))
 
         for feature in node.features:
             self.visit(feature, scope)
@@ -124,8 +124,9 @@ class TypeChecker:
         try:
             method: Method = object_type.get_method(node.id)
             return_type: Type = method.return_type if method.return_type.name != 'SELF_TYPE' else object_type
-            if node.expr is None:  # the method called belongs to the current class
-                return_type: Type = self.context.get_type(method.return_type.name)
+            if node.expr is None and method.return_type.name == 'SELF_TYPE':
+                # the method called belongs to the current class
+                return_type: Type = SelfType(method.return_type)
 
             if len(method.param_types) != len(node.args):
                 self.errors.append(UNEXPECTED_NUMBER_OF_ARGUMENT % (self.current_type.name, node.id))
@@ -233,10 +234,10 @@ class TypeChecker:
     def visit(self, node: cool_ast.VariableNode, scope: Scope):
         if scope.is_defined(node.lex):
             var: VariableInfo = scope.find_variable(node.lex)
-            return var.type
+            return var.type if var.type.name != 'SELF_TYPE' else SelfType(self.current_type)
         try:
             att: Attribute = self.current_type.get_attribute(node.lex)
-            return att.type
+            return att.type if att.type.name != 'SELF_TYPE' else SelfType(self.current_type)
         except SemanticError:
             self.errors.append(VARIABLE_NOT_DEFINED % (node.lex, self.current_type.name))
             return ErrorType()
@@ -245,7 +246,7 @@ class TypeChecker:
     def visit(self, node: cool_ast.InstantiateNode, scope: Scope):
         try:
             new_type: Type = self.context.get_type(node.lex)
-            return new_type
+            return new_type if new_type.name != 'SELF_TYPE' else SelfType(self.current_type)
         except SemanticError:
             self.errors.append(TYPE_NOT_DEFINED % node.lex)
             return ErrorType()

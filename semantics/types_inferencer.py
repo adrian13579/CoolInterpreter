@@ -2,6 +2,7 @@ from typing import Dict, List, Set
 from collections import OrderedDict
 import cool_ast
 from cmp import visitor
+from semantics.errors import INFERENCE_ERROR
 from semantics.utils import Context, Type, TypeVariable, FunctionType, Method, ErrorType, \
     Scope, SemanticError, AttrMap, MethodMap
 import typing
@@ -247,9 +248,9 @@ class TypeInferencer:
             for i, j in zip(type1.params_types, type2.params_types):
                 self.unify(i, j)
         elif type1.name == type2.name or type2.conforms_to(type1) or type1.conforms_to(type2):
-            pass
+            pass  # it's OK
         else:
-            raise Exception(f'Types mismatch: Type {type1.name} is not compatible with Type {type2.name}')
+            self.errors.append(INFERENCE_ERROR % (type1.name, type2.name))
 
     def dfs_inference(self):
         vertices: List[Type] = []

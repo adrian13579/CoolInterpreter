@@ -115,9 +115,7 @@ class Type:
         return plain.values() if clean else plain
 
     def conforms_to(self, other):
-        if self.name == 'AUTO_TYPE' or other.name == 'AUTO_TYPE':
-            return True
-        return other.bypass() or self == other or self.parent is not None and self.parent.conforms_to(
+        return other.bypass() or self.name == other.name or self.parent is not None and self.parent.conforms_to(
             other)
 
     def bypass(self):

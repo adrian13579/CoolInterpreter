@@ -7,7 +7,7 @@ A simple interpreter written in **Python** for the _Classroom Object-Oriented La
 ### CLI
 
 ```bash
-python main.py cool_program.cl
+python main.py --file cool_program.cl
 ```
 
 ### Streamlit

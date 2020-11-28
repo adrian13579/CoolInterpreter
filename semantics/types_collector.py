@@ -19,14 +19,14 @@ class TypeCollector(object):
         self.context.types['<error>'] = ErrorType()
         self.context.types['Void'] = VoidType()
         self_type = self.context.types['SELF_TYPE'] = Type('SELF_TYPE')
-        self.context.types['AUTO_TYPE'] = Type('AUTO_TYPE')
-
+        auto_type = self.context.types['AUTO_TYPE'] = Type('AUTO_TYPE')
         objectx = self.context.types['Object'] = Type('Object')
         intx = self.context.types['Int'] = Type('Int')
         string = self.context.types['String'] = Type('String')
         boolx = self.context.types['Bool'] = Type('Bool')
         IO = self.context.types['IO'] = Type('IO')
 
+        # self_type.parent = objectx
         objectx.define_method(name='abort', param_names=[], param_types=[], return_type=objectx)
         objectx.define_method(name='type_name', param_names=[], param_types=[], return_type=string)
         objectx.define_method(name='copy', param_names=[], param_types=[], return_type=self_type)
