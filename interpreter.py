@@ -85,14 +85,6 @@ def out_int(obj: CoolObject, x: CoolObject, context: Context) -> CoolObject:
     return obj
 
 
-def in_string(obj: CoolObject, context: Context) -> CoolObject:
-    return CoolObject(context.get_type('String'), input())
-
-
-def in_int(obj: CoolObject, context: Context) -> CoolObject:
-    return CoolObject(context.get_type('Int'), int(input()))
-
-
 def length(obj: CoolObject, context: Context) -> CoolObject:
     return CoolObject(context.get_type('Int'), len(obj.value))
 
@@ -103,6 +95,14 @@ def concat(obj: CoolObject, s: CoolObject, context: Context) -> CoolObject:
 
 def substr(obj: CoolObject, i: CoolObject, l: CoolObject, context: Context) -> CoolObject:
     return CoolObject(context.get_type('String'), obj.value[i.value: i.value + l.value])
+
+
+def in_string(obj: CoolObject, context: Context) -> CoolObject:
+    return CoolObject(context.get_type('String'), input())
+
+
+def in_int(obj: CoolObject, context: Context) -> CoolObject:
+    return CoolObject(context.get_type('Int'), int(input()))
 
 
 class Interpreter:
@@ -193,8 +193,7 @@ class Interpreter:
                 min = types_distance
 
         if most_suitable_type == -1:
-            print('Error...')
-            exit()  # Stop execution and raise exception??? 😐
+            raise CoolRuntimeError('Execution error')
 
         child_scope = scope.create_child()
         new_var_type = self.context.get_type(node.options[most_suitable_type].type)

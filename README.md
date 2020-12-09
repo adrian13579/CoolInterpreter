@@ -7,15 +7,13 @@ A simple interpreter written in **Python** for the _Classroom Object-Oriented La
 ### CLI
 
 ```bash
-python main.py --file cool_program.cl
+python CoolInterpreter --file cool_program.cl
 ```
 
 ### Streamlit
 
-**note**: The streamlit app does not support executions of the program. Semantics check is the only feature available for now.
+**note**: The [streamlit](https//:streamlit.io) app does not support execution of the program. Semantics check is the only feature available for now.
 
-- Install [streamlit](https//:streamlit.io)
-- Execute in console:
 
 ```bash
 streamlit run UI.py

@@ -11,12 +11,15 @@ class Foo inherits Bazz {
 
 };
 
+
 class Bar inherits Razz {
 
      c : Int <- doh();
 
      d : Object <- printh();
 };
+
+
 
 
 class Razz inherits Foo {
@@ -29,6 +32,7 @@ class Razz inherits Foo {
      f : Int <- a@Bazz.doh() + g.doh() + e.doh() + doh() + printh();
 
 };
+
 
 class Bazz inherits IO {
 

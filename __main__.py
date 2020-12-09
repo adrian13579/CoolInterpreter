@@ -1,4 +1,3 @@
-import logging
 import os
 from rich.console import Console
 from cmp.evaluation import evaluate_reverse_parse

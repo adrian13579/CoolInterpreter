@@ -34,7 +34,6 @@ class TypeInferencer:
         for class_decl in node.declarations:
             self.current_type = self.context.get_type(class_decl.id)
             self.visit(class_decl, scope.create_child())
-        self.dfs_inference()
 
     @visitor.when(cool_ast.ClassDeclarationNode)
     def visit(self, node: cool_ast.ClassDeclarationNode, scope: Scope) -> None:
@@ -50,24 +49,19 @@ class TypeInferencer:
             self.visit(method, scope.create_child())
 
     @visitor.when(cool_ast.AttrDeclarationNode)
-    def visit(self, node: cool_ast.AttrDeclarationNode, scope: Scope) -> Type:
+    def visit(self, node: cool_ast.AttrDeclarationNode, scope: Scope) -> None:
         if node.expression is not None:
             expr_type = self.visit(node.expression, scope.create_child())
             attr_type = self.attributes.get_attribute(self.current_type, node.id)
             self.unify(attr_type, expr_type)
-            return attr_type
-        else:
-            return self.attributes.get_attribute(self.current_type, node.id)
 
     @visitor.when(cool_ast.MethodDeclarationNode)
-    def visit(self, node: cool_ast.MethodDeclarationNode, scope: Scope) -> FunctionType:
+    def visit(self, node: cool_ast.MethodDeclarationNode, scope: Scope) -> None:
         function = self.functions.get_function(self.current_type, self.current_method.name)
         for param_type, param in zip(function.params_types, node.params):
             scope.define_variable(param.id, param_type)
-
         body_type = self.visit(node.body, scope)
         self.unify(function.return_type, body_type)
-        return function
 
     @visitor.when(cool_ast.ConditionalNode)
     def visit(self, node: cool_ast.ConditionalNode, scope: Scope) -> Type:
@@ -76,9 +70,16 @@ class TypeInferencer:
         self.unify(bool_type, cond_type)
         then_type = self.visit(node.then_body, scope.create_child())
         else_type = self.visit(node.else_body, scope.create_child())
-
+        try:
+            then_type = self.substitutions[then_type]
+        except KeyError:
+            pass
+        try:
+            else_type = self.substitutions[else_type]
+        except KeyError:
+            pass
         if isinstance(then_type, TypeVariable) or isinstance(else_type, TypeVariable):
-            return self.context.get_type('Object')
+            return TypeVariable()
 
         return Type.join_types(then_type, else_type)
 
@@ -89,12 +90,18 @@ class TypeInferencer:
         for option in node.options:
             child_scope = scope.create_child()
             child_scope.define_variable(option.id, self.context.get_type(option.type))
-            types.append(self.visit(option.expr, child_scope))
+            option_type = self.visit(option.expr, child_scope)
+            if isinstance(option_type, TypeVariable):
+                try:
+                    option_type = self.substitutions[option_type.name]
+                except KeyError:
+                    pass
+            types.append(option_type)
 
         if any(isinstance(typex, TypeVariable) for typex in types):
-            return self.context.get_type('Object')
+            return TypeVariable()
 
-        return Type.join_types(types)
+        return Type.join_types(*types)
 
     @visitor.when(cool_ast.LetNode)
     def visit(self, node: cool_ast.LetNode, scope: Scope):
@@ -102,6 +109,11 @@ class TypeInferencer:
         for var in node.var_decl_list:
             var_type = self.visit(var, child_scope)
         body_type = self.visit(node.in_expr, child_scope)
+        if isinstance(body_type, TypeVariable):
+            try:
+                return self.substitutions[body_type.name]
+            except KeyError:
+                pass
         return body_type
 
     @visitor.when(cool_ast.AssignNode)
@@ -112,8 +124,7 @@ class TypeInferencer:
             var_type = self.attributes.get_attribute(self.current_type, node.id)
         else:
             var_type = var_info.type
-        self.unify(var_type, expr_type)
-        return var_type
+        return self.unify(var_type, expr_type)
 
     @visitor.when(cool_ast.BlocksNode)
     def visit(self, node: cool_ast.BlocksNode, scope: Scope) -> Type:
@@ -121,6 +132,12 @@ class TypeInferencer:
         expr_type = self.context.get_type('Void')
         for expr in node.expr_list:
             expr_type = self.visit(expr, child_scope)
+
+        if isinstance(expr_type, TypeVariable):
+            try:
+                expr_type = self.substitutions[expr_type.name]
+            except KeyError:
+                pass
         return expr_type
 
     @visitor.when(cool_ast.MethodCallNode)
@@ -137,15 +154,23 @@ class TypeInferencer:
 
         # checks if the type is known
         if isinstance(typex, TypeVariable):
-            self.errors.append('Inference error')
-        else:
-            function = self.functions.get_function(typex, node.id)
-            args_type: List[Type] = []
-            for arg in node.args:
-                arg_type = self.visit(arg, scope)
-                args_type.append(arg_type)
-            self.unify(function, FunctionType(tuple(args_type), function.return_type))
-            return function.return_type
+            try:
+                typex = self.substitutions[typex.name]
+            except KeyError:
+                return typex
+
+        function = self.functions.get_function(typex, node.id)
+        args_type: List[Type] = []
+        for arg in node.args:
+            arg = self.visit(arg, scope)
+            args_type.append(arg)
+        return_type = self.unify(function, FunctionType(tuple(args_type), function.return_type))
+        if isinstance(return_type, TypeVariable):
+            try:
+                return_type = self.substitutions[return_type.name]
+            except KeyError:
+                pass
+        return return_type
 
     @visitor.when(cool_ast.LoopNode)
     def visit(self, node: cool_ast.LoopNode, scope: Scope) -> Type:
@@ -157,9 +182,19 @@ class TypeInferencer:
     @visitor.when(cool_ast.VarDeclarationNode)
     def visit(self, node: cool_ast.VarDeclarationNode, scope: Scope) -> Type:
         var_type = self.context.get_type(node.typex)
+        if node.typex == "AUTO_TYPE":
+            var_type = TypeVariable()
         if node.expr is not None:
-            var_type = self.visit(node.expr, scope)
-        scope.define_variable(node.id, var_type)
+            expr_type = self.visit(node.expr, scope)
+            var_type = self.unify(var_type, expr_type)
+            scope.define_variable(node.id, var_type)
+
+        if isinstance(var_type, TypeVariable):
+            try:
+                var_type = self.substitutions[var_type.name]
+            except KeyError:
+                pass
+
         return var_type
 
     @visitor.when(cool_ast.ComparerNode)
@@ -187,6 +222,11 @@ class TypeInferencer:
         if var_info is not None:
             return var_info.type
         var_type = self.attributes.get_attribute(self.current_type, node.lex)
+        if isinstance(var_type, TypeVariable):
+            try:
+                return self.substitutions[var_type.name]
+            except KeyError:
+                return var_type
         if var_type is None:
             return ErrorType()
         return var_type
@@ -195,8 +235,7 @@ class TypeInferencer:
     def visit(self, node: cool_ast.NotNode, scope: Scope) -> Type:
         bool_type = self.context.get_type('Bool')
         expr_type = self.visit(node.expr, scope)
-        self.unify(bool_type, expr_type)
-        return bool_type
+        return self.unify(bool_type, expr_type)
 
     @visitor.when(cool_ast.IsVoidNode)
     def visit(self, node: cool_ast.IsVoidNode, scope: Scope) -> Type:
@@ -208,8 +247,7 @@ class TypeInferencer:
     def visit(self, node: cool_ast.ComplementNode, scope: Scope) -> Type:
         int_type = self.context.get_type('Int')
         expr_type = self.visit(node.expr, scope)
-        self.unify(int_type, expr_type)
-        return int_type
+        return self.unify(int_type, expr_type)
 
     @visitor.when(cool_ast.ConstantNumNode)
     def visit(self, node: cool_ast.ConstantNumNode, scope: Scope) -> Type:
@@ -227,51 +265,36 @@ class TypeInferencer:
     def visit(self, node: cool_ast.InstantiateNode, scope: Scope) -> Type:
         return self.context.get_type(node.lex)
 
-    def var_bind(self, type1, type2):
-        if type1.name == type2.name:
-            return  # self-reference
+    def var_bind(self, a, b):
         try:
-            self.types_graph[type1].add(type2)
+            self.types_graph[a].add(b)
         except KeyError:
-            self.types_graph[type1] = {type2}
+            self.types_graph[a] = {b}
+
         try:
-            self.types_graph[type2].add(type1)
+            self.types_graph[b].add(a)
         except KeyError:
-            self.types_graph[type2] = {type1}
+            self.types_graph[b] = {a}
 
     def unify(self, type1: Type, type2: Type):
         if isinstance(type1, TypeVariable) or isinstance(type2, TypeVariable):
             self.var_bind(type1, type2)
-        elif isinstance(type1, FunctionType) and isinstance(type2, FunctionType) \
+        if isinstance(type1, FunctionType) and isinstance(type2, FunctionType) \
                 and len(type1.params_types) == len(type2.params_types):
-            self.unify(type1.return_type, type2.return_type)
             for i, j in zip(type1.params_types, type2.params_types):
                 self.unify(i, j)
-        elif type1.name == type2.name or type2.conforms_to(type1) or type1.conforms_to(type2):
-            pass  # it's OK
-        else:
-            self.errors.append(INFERENCE_ERROR % (type1.name, type2.name))
+            return self.unify(type1.return_type, type2.return_type)
 
-    def dfs_inference(self):
-        vertices: List[Type] = []
-        for typex in self.types_graph:
-            if isinstance(typex, TypeVariable):
-                self.substitutions[typex.name] = ErrorType()
-            else:
-                vertices.append(typex)
-            typex.visited = False
-        for vertex in vertices:
-            self.current_type = vertex
-            if not vertex.visited:
-                self.dfs_visit(vertex)
+        if isinstance(type1, TypeVariable) and not isinstance(type2, TypeVariable):
+            self.substitutions[type1.name] = type2
+            return type2
 
-    def dfs_visit(self, vertex):
-        if isinstance(vertex, TypeVariable):
-            self.substitutions[vertex.name] = self.current_type
-        elif not (vertex.conforms_to(self.current_type) or self.current_type.conforms_to(vertex)):
-            raise SemanticError('Type inference error')
+        if isinstance(type2, TypeVariable) and not isinstance(type1, TypeVariable):
+            self.substitutions[type2.name] = type1
+            return type1
 
-        vertex.visited = True
-        for adj in self.types_graph[vertex]:
-            if not adj.visited:
-                self.dfs_visit(adj)
+        if not isinstance(type2, TypeVariable) and not isinstance(type1, TypeVariable):
+            return type1
+
+        if isinstance(type2, TypeVariable) and isinstance(type1, TypeVariable):
+            return type1

@@ -20,6 +20,7 @@ class TypesUpdater:
         self.subst = subst
         self.errors = errors
         self.current_type: Type = None
+        self.change = False
 
     @visitor.on('node')
     def visit(self, node, scope, index):
@@ -47,7 +48,11 @@ class TypesUpdater:
     def visit(self, node: cool_ast.AttrDeclarationNode, scope: Scope, index: int) -> int:
         if node.typex == 'AUTO_TYPE':
             att_type = self.attributes.get_attribute(self.current_type, node.id)
-            node.typex = self.subst[att_type.name].name
+            try:
+                node.typex = self.subst[att_type.name].name
+                self.change = True
+            except KeyError:
+                pass
 
         if node.expression is not None:
             index = self.visit(node.expression, scope, index)
@@ -58,10 +63,18 @@ class TypesUpdater:
         function = self.functions.get_function(self.current_type, node.id)
         for param, param_type in zip(node.params, function.params_types):
             if param.typex == 'AUTO_TYPE':
-                param.typex = self.subst[param_type.name].name
+                try:
+                    param.typex = self.subst[param_type.name].name
+                    self.change = True
+                except KeyError:
+                    pass
 
         if node.type == 'AUTO_TYPE':
-            node.type = self.subst[function.return_type.name].name
+            try:
+                node.type = self.subst[function.return_type.name].name
+                self.change = True
+            except KeyError:
+                pass
 
         if node.body is not None:
             index = self.visit(node.body, scope, index)
@@ -117,7 +130,11 @@ class TypesUpdater:
         if node.typex == 'AUTO_TYPE':
             var_info = scope.find_variable(node.id)
             if isinstance(var_info.type, TypeVariable):
-                node.typex = self.subst[var_info.type.name].name
+                try:
+                    node.typex = self.subst[var_info.type.name].name
+                    self.change = True
+                except KeyError:
+                    pass
             else:
                 node.typex = var_info.type.name
 

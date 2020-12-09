@@ -1,24 +1,19 @@
-class Main inherits IO{
-    a :  SELF_TYPE ;
-    main(): AUTO_TYPE {{
-        a; --<- new Ackermann;
-            -- a.ackermann(1,3);
-        }
-    };
-};
+(* This program prints the first 10 numbers of fibonacci *)
+class Main {
 
-class Fact {
-    fact(n : Int): Int{
-        if (n=0) then 1 else n*fact(n-1) fi
+    main(): Object {
+        let total: AUTO_TYPE <- 10,
+            i: AUTO_TYPE <- 1 ,
+            io: AUTO_TYPE <- new IO in
+                while i < total loop {
+                    io.out_int(bonacci(i));
+                    io.out_string("\n");
+                    i <- i + 1;
+                }
+                pool
     };
-};
 
-class Ackermann {
-    ackermann(m:AUTO_TYPE, n: AUTO_TYPE): AUTO_TYPE{
-        if (m = 0 ) then n+1 else
-            if ( n = 0) then ackermann(m-1, 1) else
-                ackermann(m-1, ackermann(m, n-1))
-            fi
-        fi
-    };
+    bonacci (n: AUTO_TYPE): AUTO_TYPE {
+       if n < 2 then 1 else bonacci(n - 1) + bonacci(n - 2) fi
+   };
 };

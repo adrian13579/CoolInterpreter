@@ -10,11 +10,22 @@ from semantics.utils import Context, Scope
 path = os.getcwd() + '/tools'
 tokenizer = Serializer.load(path + '/lexer')
 parser = Serializer.load(path + '/parser')
-example_code = '''class Main inherits IO {
-    main(): SELF_TYPE {
-        out_string("Hello World")
+example_code = '''class Main {
+    x: AUTO_TYPE;
+
+    main (): A {
+        x <- new A
+     };
+    succ(n : AUTO_TYPE) : AUTO_TYPE { n + 1 };
+};
+
+class A inherits IO {
+    methodA():  SELF_TYPE {
+        out_string("Hello")
     };
 };
+
+
 '''
 
 if __name__ == '__main__':

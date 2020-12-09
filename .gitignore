@@ -13,11 +13,3 @@ cool-manual.pdf
 tests/code1.py
 tests/qwq.py
 .vscode/
-cmp/tools/.ipynb_checkpoints/
-cmp/tools/__init__.py
-cmp/tools/automata.py
-cmp/tools/evaluation.py
-cmp/tools/parsing.py
-cmp/tools/regex.py
-cool-compiler-examples-master.zip
-cool-compiler-examples-master

@@ -104,4 +104,3 @@ case_list %= case_single, lambda h, s: [s[1]]
 
 case_single %= idx + colon + idx + case_assigment + expr + semi, lambda h, s: CaseOptionNode(s[1], s[3], s[5])
 
-# TODO: Allow adding let and if expressions without ( )
